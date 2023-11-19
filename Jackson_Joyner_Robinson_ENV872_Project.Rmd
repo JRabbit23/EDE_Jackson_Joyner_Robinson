@@ -7,16 +7,108 @@
 \newpage
 
 ```{r setup, include=FALSE}
-# Set your working directory
+# Set your working directory - EDE-Jackson_Joyner_Robinson
+getwd()
 
 # Load your packages
+install.packages(readxl)
+install.packages(tidyverse)
+install.packages(dplyr)
+install.packages(lubridate)
+install.packages(ggplot2)
+install.packages(sf)
+install.packages(mapview)
+install.packages(trend)
+install.packages(zoo)
+install.packages(kendall)
+install.packages(tseries)
 
+library(readxl)
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(sf)
+library(mapview)
+library(trend)
+library(zoo)
+library(Kendall)
+library(tseries)
+
+
+class(eGRID2020_Data)
+class(Gov_Data)
 # Set your ggplot theme
+# COME BACK TO THEME
 
 # Load your datasets
+eGRID2010 <- read_excel("Data/Raw/eGRID2010_Data.xls", 
+    sheet = "PLNT10", skip = 4)
+eGRID2012 <- read_excel("Data/Raw/eGRID2012_Data.xlsx", 
+    sheet = "PLNT12", skip = 4)
+eGRID2014 <- read_excel("Data/Raw/eGRID2014_Data.xlsx", 
+    sheet = "PLNT14", skip = 1)
+eGRID2016 <- read_excel("Data/Raw/egrid2016_Data.xlsx", 
+                      sheet = "PLNT16", skip = 1)
+eGRID2018 <- read_excel("Data/Raw/eGRID2018_Data.xlsx",
+                      sheet = "PLNT18", skip = 1)
+eGRID2019 <- read_excel("Data/Raw/egrid2019_Data.xlsx",
+                      sheet = "PLNT19", skip = 1)
+eGRID2020 <- read_excel("Data/Raw/eGRID2020_Data.xlsx",
+                      sheet = "PLNT20", skip = 1)
+Gov_Data <- read.csv("Data/Raw/US_Governors_1775_2020.csv")
 
 ```
 
+# Wrangling
+
+```{r setup, include=FALSE}
+# selecting data for desired columns from imported eGRID datasets
+
+eGRID2010_sub <- eGRID2010 %>%
+  mutate(YEAR="2010") %>%
+  select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
+  
+eGRID2012_sub <- eGRID2012 %>%
+  mutate(YEAR="2012") %>%
+  select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
+
+eGRID2014_sub <- eGRID2014 %>%
+  mutate(YEAR="2014") %>%
+  select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
+
+eGRID2016_sub <- eGRID2016 %>%
+  mutate(YEAR="2016") %>%
+  select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
+
+eGRID2018_sub <- eGRID2018 %>%
+  select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
+
+eGRID2019_sub <- eGRID2019 %>%
+  select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
+
+eGRID2020_sub <- eGRID2020 %>%
+  select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
+
+# merging eGRID data, filtering for renewable fuels
+eGRID_2010_2020 <- rbind(eGRID2010_sub,eGRID2012_sub,eGRID2014_sub,eGRID2016_sub,
+      eGRID2018_sub,eGRID2019_sub,eGRID2020_sub)
+
+# checking fuel types
+unique(eGRID_2010_2020$PLFUELCT)
+
+# filtering for desired fuel types
+eGRID_2010_2020_RENEW <- filter(eGRID_2010_2020,PLFUELCT=="SOLAR"|PLFUELCT=="WIND"|PLFUELCT=="GEOTHERMAL"|
+          PLFUELCT=="HYDRO"|PLFUELCT=="BIOMASS"|PLFUELCT=="NUCLEAR")
+
+# checking fuel types were filterd correctly
+unique(eGRID_2010_2020_RENEW$PLFUELCT)
+
+# saving process data as CSV
+write_excel_csv(eGRID_2010_2020_RENEW, 
+                path = "Data/eGRID_2010_2020_RENEW.csv")
+
+```
 
 # Rationale and Research Questions
 
