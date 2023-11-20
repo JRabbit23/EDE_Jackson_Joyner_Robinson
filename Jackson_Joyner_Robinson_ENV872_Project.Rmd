@@ -11,17 +11,17 @@
 getwd()
 
 # Load your packages
-install.packages(readxl)
-install.packages(tidyverse)
-install.packages(dplyr)
-install.packages(lubridate)
-install.packages(ggplot2)
-install.packages(sf)
-install.packages(mapview)
-install.packages(trend)
-install.packages(zoo)
-install.packages(kendall)
-install.packages(tseries)
+#install.packages(readxl)
+#install.packages(tidyverse)
+#install.packages(dplyr)
+#install.packages(lubridate)
+#install.packages(ggplot2)
+#install.packages(sf)
+#install.packages(mapview)
+#install.packages(trend)
+#install.packages(zoo)
+#install.packages(kendall)
+#install.packages(tseries)
 
 library(readxl)
 library(tidyverse)
@@ -36,8 +36,8 @@ library(Kendall)
 library(tseries)
 
 
-class(eGRID2020_Data)
-class(Gov_Data)
+#class(eGRID2020_Data)
+#class(Gov_Data)
 # Set your ggplot theme
 # COME BACK TO THEME
 
@@ -60,9 +60,9 @@ Gov_Data <- read.csv("Data/Raw/US_Governors_1775_2020.csv")
 
 ```
 
-# Wrangling
+# Wrangling eGRID
 
-```{r setup, include=FALSE}
+```{r Wrangle eGRID}
 # selecting data for desired columns from imported eGRID datasets
 
 eGRID2010_sub <- eGRID2010 %>%
@@ -101,15 +101,40 @@ unique(eGRID_2010_2020$PLFUELCT)
 eGRID_2010_2020_RENEW <- filter(eGRID_2010_2020,PLFUELCT=="SOLAR"|PLFUELCT=="WIND"|PLFUELCT=="GEOTHERMAL"|
           PLFUELCT=="HYDRO"|PLFUELCT=="BIOMASS"|PLFUELCT=="NUCLEAR")
 
+#Change year column to character
+eGRID_2010_2020_RENEW$YEAR <- as.character(eGRID_2010_2020_RENEW$YEAR)
+#eGRID_2010_2020_RENEW$YEAR <- year(eGRID_2010_2020_RENEW$YEAR)
+
 # checking fuel types were filterd correctly
 unique(eGRID_2010_2020_RENEW$PLFUELCT)
 
 # saving process data as CSV
 write_excel_csv(eGRID_2010_2020_RENEW, 
-                path = "Data/eGRID_2010_2020_RENEW.csv")
-
+                path = "Data/Processed/eGRID_2010_2020_RENEW.csv")
 ```
 
+#Wrangling Gov Data
+
+```{r Wrangling Gov Data, include=FALSE}
+
+#Filtering governor data for 2010 to 2020
+Gov_Data_10_20 <- filter(Gov_Data,year >= 2010)
+
+#Creating State abbreviation column for gov data
+Gov_Data_State <- Gov_Data_10_20 %>%
+  mutate(StateAbbreviation = state.abb[match(state, state.name)])
+
+#Changing year to character
+Gov_Data_State <- Gov_Data_State %>%
+  mutate(year = as.character(year))
+
+#Joining gov data with eGRID processed data
+GOV_eGRID_10_20 <- left_join(eGRID_2010_2020_RENEW, Gov_Data_State, by = c("PSTATABB" = "StateAbbreviation", "YEAR" = "year"))
+
+#Adding Final Processed file to processed folder
+write_csv(GOV_eGRID_10_20, 
+                path = "Data/Processed/GOV_eGRID_10_20.csv")
+```
 # Rationale and Research Questions
 
 
