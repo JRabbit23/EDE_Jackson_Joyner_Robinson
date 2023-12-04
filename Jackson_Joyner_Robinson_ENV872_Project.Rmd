@@ -59,6 +59,16 @@ eGRID2020 <- read_excel("Data/Raw/eGRID2020_Data.xlsx",
                       sheet = "PLNT20", skip = 1)
 Gov_Data <- read.csv("Data/Raw/US_Governors_1775_2020.csv")
 
+#States_shapefile_csv <- read.csv("Data/Raw/States_shapefile.csv")
+
+#States_shapefile_shp <- st_read("Data/Raw/States_shapefile.shp")
+
+States_shapefile_shp <- st_read("Data/Raw/us-state-boundaries.shp")
+
+States_shapefile_csv <- read.csv("Data/Raw/us-state-boundaries.csv")
+
+counties_sf_1 <- st_read('Data/Raw/cb_2018_us_county_20m.shp')
+
 ```
 
 # Wrangling eGRID
@@ -129,7 +139,6 @@ write_excel_csv(eGRID_2010_2020_RENEW,
 #Wrangling Gov Data
 
 ```{r Wrangling Gov Data, include=FALSE}
-#FIX THIS SHIT: MISSING 2010 and 2012 Years!!!!!!!!
 
 #Filtering governor data for 2010 to 2020
 Gov_Data_10_20 <- filter(Gov_Data,year >= 2010)
@@ -161,6 +170,10 @@ colnames(GOV_eGRID_10_20)
 #Adding Final Processed file to processed folder
 write_csv(GOV_eGRID_10_20, 
                 path = "Data/Processed/GOV_eGRID_10_20.csv")
+
+mapview(States_shapefile)
+
+
 ```
 # Rationale and Research Questions
 
