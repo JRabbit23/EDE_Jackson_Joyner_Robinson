@@ -52,8 +52,9 @@ eGRID2016 <- read_excel("Data/Raw/egrid2016_Data.xlsx",
                       sheet = "PLNT16", skip = 1)
 eGRID2018 <- read_excel("Data/Raw/eGRID2018_Data.xlsx",
                       sheet = "PLNT18", skip = 1)
-eGRID2019 <- read_excel("Data/Raw/egrid2019_Data.xlsx",
-                      sheet = "PLNT19", skip = 1)
+#REMOVE THIS LATER
+#eGRID2019 <- read_excel("Data/Raw/egrid2019_Data.xlsx",
+ #                     sheet = "PLNT19", skip = 1)
 eGRID2020 <- read_excel("Data/Raw/eGRID2020_Data.xlsx",
                       sheet = "PLNT20", skip = 1)
 Gov_Data <- read.csv("Data/Raw/US_Governors_1775_2020.csv")
@@ -65,13 +66,21 @@ Gov_Data <- read.csv("Data/Raw/US_Governors_1775_2020.csv")
 ```{r Wrangle eGRID}
 # selecting data for desired columns from imported eGRID datasets
 
+#Note column "PLPFGNCT" for 2010 -- note that "PLFUELCT" was dropped and replaced
 eGRID2010_sub <- eGRID2010 %>%
   mutate(YEAR="2010") %>%
-  select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
-  
+  select(YEAR,PSTATABB,ORISPL,PNAME,PLPFGNCT,NAMEPCAP,LAT,LON)
+
+eGRID2010_sub$PLFUELCT <- eGRID2010_sub$PLPFGNCT
+eGRID2010_sub$PLPFGNCT <- NULL
+
+#Note column "PLPFGNCT" for 2012 -- note that "PLFUELCT" was dropped and replaced
 eGRID2012_sub <- eGRID2012 %>%
   mutate(YEAR="2012") %>%
-  select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
+  select(YEAR,PSTATABB,ORISPL,PNAME,PLPFGNCT,NAMEPCAP,LAT,LON)
+
+eGRID2012_sub$PLFUELCT <- eGRID2012_sub$PLPFGNCT
+eGRID2012_sub$PLPFGNCT <- NULL
 
 eGRID2014_sub <- eGRID2014 %>%
   mutate(YEAR="2014") %>%
@@ -84,15 +93,16 @@ eGRID2016_sub <- eGRID2016 %>%
 eGRID2018_sub <- eGRID2018 %>%
   select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
 
-eGRID2019_sub <- eGRID2019 %>%
-  select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
+#REMOVE THIS LATER
+#eGRID2019_sub <- eGRID2019 %>%
+ # select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
 
 eGRID2020_sub <- eGRID2020 %>%
   select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
 
 # merging eGRID data, filtering for renewable fuels
 eGRID_2010_2020 <- rbind(eGRID2010_sub,eGRID2012_sub,eGRID2014_sub,eGRID2016_sub,
-      eGRID2018_sub,eGRID2019_sub,eGRID2020_sub)
+      eGRID2018_sub,eGRID2020_sub)
 
 # checking fuel types
 unique(eGRID_2010_2020$PLFUELCT)
@@ -105,8 +115,11 @@ eGRID_2010_2020_RENEW <- filter(eGRID_2010_2020,PLFUELCT=="SOLAR"|PLFUELCT=="WIN
 eGRID_2010_2020_RENEW$YEAR <- as.character(eGRID_2010_2020_RENEW$YEAR)
 #eGRID_2010_2020_RENEW$YEAR <- year(eGRID_2010_2020_RENEW$YEAR)
 
-# checking fuel types were filterd correctly
+# checking fuel types were filtered correctly
 unique(eGRID_2010_2020_RENEW$PLFUELCT)
+
+# checking to ensure all years of interest are present
+unique(eGRID_2010_2020_RENEW$YEAR)
 
 # saving process data as CSV
 write_excel_csv(eGRID_2010_2020_RENEW, 
@@ -135,6 +148,16 @@ GOV_eGRID_10_20 <- left_join(eGRID_2010_2020_RENEW, Gov_Data_State, by = c("PSTA
 # dropping N/A's
 drop_na(GOV_eGRID_10_20)
 
+#Checking years of final dataset
+unique(GOV_eGRID_10_20$YEAR)
+
+#Checking fuel types of final dataset
+unique(GOV_eGRID_10_20$PLFUELCT)
+
+#Dataset information -- REVISIT THIS
+dim(GOV_eGRID_10_20)
+colnames(GOV_eGRID_10_20)
+
 #Adding Final Processed file to processed folder
 write_csv(GOV_eGRID_10_20, 
                 path = "Data/Processed/GOV_eGRID_10_20.csv")
@@ -161,16 +184,16 @@ write_csv(GOV_eGRID_10_20,
 
 ```{r Graphical Analysis, include=FALSE}
 
-first_plot<- ggplot(GOV_eGRID_10_20, aes(x=YEAR,y=NAMEPCAP))+
-  geom_point()
-print(first_plot)
+#first_plot<- ggplot(GOV_eGRID_10_20, aes(x=YEAR,y=NAMEPCAP))+
+ # geom_point()
+#print(first_plot)
 
 
 # spatial analysis
-eGRID_Gov.sf <- GOV_eGRID_10_20 %>% 
-  st_as_sf(coords = c('LON','LAT'),
-           crs=4326)
-mapview(eGRID_Gov.sf, zcol="PLFUELCT")
+#eGRID_Gov.sf <- GOV_eGRID_10_20 %>% 
+ # st_as_sf(coords = c('LON','LAT'),
+  #         crs=4326)
+#mapview(eGRID_Gov.sf, zcol="PLFUELCT")
 
 
 
