@@ -205,19 +205,55 @@ write_csv(GOV_eGRID_10_20,
 
 # Analysis
 
-```{r Graphical Analysis, include=FALSE}
+```{r Time Series Analysis, include=FALSE}
+
+#Exploratory distribution analysis using box, point, and violin plot
+
+ggplot(GOV_eGRID_10_20, aes(x = YEAR, y = NAMEPCAP, color= PLFUELCT)) +
+  geom_point() +
+  ylim(0, 5000)
+
+ggplot(GOV_eGRID_10_20, aes(x = YEAR, y = NAMEPCAP)) +
+  geom_boxplot() +
+  ylim(0, 50)
+
+ggplot(GOV_eGRID_10_20, aes(x = YEAR, y = NAMEPCAP)) +
+  geom_violin() +
+  ylim(0, 50)
+
+Republican_Renewables <- GOV_eGRID_10_20 %>%
+  filter(party == "Republican") %>%
+  ggplot(aes(x = YEAR, y = NAMEPCAP, color = PLFUELCT)) +
+  geom_point() +
+  ylim(0, 5000)
+plot(Republican_Renewables)
+
+Democrat_Renewables <- GOV_eGRID_10_20 %>%
+  filter(party == "Democrat") %>%
+  ggplot(aes(x = YEAR, y = NAMEPCAP, color = PLFUELCT)) +
+  geom_point() +
+  ylim(0, 5000)
+plot(Democrat_Renewables)
+
+#check NAs
+
+summary(GOV_eGRID_10_20$NAMEPCAP)
+
+#Make into time series object for nameplate cap
+
+GOV_eGRID.yearly.ts <- ts(GOV_eGRID_10_20$NAMEPCAP,
+                          start(2010),
+                          end = (2020))
+plot(GOV_eGRID.yearly.ts)
+
+```
+
+```{r Spatial Analysis, include=FALSE}
 
 #Exploratory
 mapview(States_shapefile_shp)
 
 mapview(GOV_eGRID_10_20)
-
-#ggplot(GOV_eGRID_10_20, aes(x=YEAR,y=NAMEPCAP))+
- # geom_point()
-
-first_plot<- ggplot(GOV_eGRID_10_20, aes(x=YEAR,y=NAMEPCAP))+
-  geom_point()
-print(first_plot)
 
 # spatial analysis
 
@@ -244,8 +280,6 @@ party_colors <- c(" " = "white",
 
 party_map <- mapview(GOV_States.sf, zcol = "party", col.regions = party_colors)
 print(party_map)
-
-
 
 ```
 
