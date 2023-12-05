@@ -22,6 +22,7 @@ getwd()
 #install.packages(zoo)
 #install.packages(kendall)
 #install.packages(tseries)
+#install.packages(leaflet)
 
 library(readxl)
 library(tidyverse)
@@ -34,6 +35,7 @@ library(trend)
 library(zoo)
 library(Kendall)
 library(tseries)
+library(leaflet)
 
 
 #class(eGRID2020_Data)
@@ -59,15 +61,8 @@ eGRID2020 <- read_excel("Data/Raw/eGRID2020_Data.xlsx",
                       sheet = "PLNT20", skip = 1)
 Gov_Data <- read.csv("Data/Raw/US_Governors_1775_2020.csv")
 
-#States_shapefile_csv <- read.csv("Data/Raw/States_shapefile.csv")
-
-#States_shapefile_shp <- st_read("Data/Raw/States_shapefile.shp")
-
 States_shapefile_shp <- st_read("Data/Raw/us-state-boundaries.shp")
 
-States_shapefile_csv <- read.csv("Data/Raw/us-state-boundaries.csv")
-
-counties_sf_1 <- st_read('Data/Raw/cb_2018_us_county_20m.shp')
 
 ```
 
@@ -151,11 +146,26 @@ Gov_Data_State <- Gov_Data_10_20 %>%
 Gov_Data_State <- Gov_Data_State %>%
   mutate(year = as.character(year))
 
+#Separating time in office column
+#Key assumption is that end year is the year to be used for analysis of political
+#Rationale -- incumbent governor is in office for the majority of this year
+Gov_Data_State <- Gov_Data_State %>%
+  separate(time_in_office, into = c("Start_Year", "End_Year"), sep = " - ")
+
+# filtering for columns of interest
+States_shapefile_shp_filtered <- States_shapefile_shp %>%
+  select(basename, stusab, geometry)
+
+#Merging governor data with state shape file
+GOV_States <- left_join(Gov_Data_State, States_shapefile_shp_filtered, by = c("StateAbbreviation" = "stusab"))
+
 #Joining gov data with eGRID processed data
 GOV_eGRID_10_20 <- left_join(eGRID_2010_2020_RENEW, Gov_Data_State, by = c("PSTATABB" = "StateAbbreviation", "YEAR" = "year"))
 
 # dropping N/A's
-drop_na(GOV_eGRID_10_20)
+
+GOV_eGRID_10_20 <- GOV_eGRID_10_20 %>%
+  drop_na(LAT)
 
 #Checking years of final dataset
 unique(GOV_eGRID_10_20$YEAR)
@@ -171,7 +181,7 @@ colnames(GOV_eGRID_10_20)
 write_csv(GOV_eGRID_10_20, 
                 path = "Data/Processed/GOV_eGRID_10_20.csv")
 
-mapview(States_shapefile)
+
 
 
 ```
@@ -197,18 +207,63 @@ mapview(States_shapefile)
 
 ```{r Graphical Analysis, include=FALSE}
 
-#first_plot<- ggplot(GOV_eGRID_10_20, aes(x=YEAR,y=NAMEPCAP))+
- # geom_point()
-#print(first_plot)
+#Exploratory
+mapview(States_shapefile_shp)
 
+mapview(GOV_eGRID_10_20)
+
+#ggplot(GOV_eGRID_10_20, aes(x=YEAR,y=NAMEPCAP))+
+ # geom_point()
+
+first_plot<- ggplot(GOV_eGRID_10_20, aes(x=YEAR,y=NAMEPCAP))+
+  geom_point()
+print(first_plot)
 
 # spatial analysis
-#eGRID_Gov.sf <- GOV_eGRID_10_20 %>% 
- # st_as_sf(coords = c('LON','LAT'),
-  #         crs=4326)
-#mapview(eGRID_Gov.sf, zcol="PLFUELCT")
+
+#Viewing power plants
+Gov_eGRID.sf <- GOV_eGRID_10_20 %>% 
+  st_as_sf(coords = c('LON','LAT'),
+           crs=4326)
+
+mapview(Gov_eGRID.sf, zcol="PLFUELCT")
+
+#
+GOV_States.sf <- st_as_sf(GOV_States)
+
+mapview(GOV_States.sf, zcol = "party") +
+  mapview(Gov_eGRID.sf, zcol="PLFUELCT")
+
+party_colors <- c(" " = "white",
+                  "Democratic" = "blue",  # Assigning blue to Democratic
+                  "Independent" = "gray",
+                  "New Progressive Party (Puerto Rico)" = "black",
+                  "Popular Democratic Party" = "yellow",
+                  "Republican" = "red"  # Assigning red to Republican
+                  )
+
+party_map <- mapview(GOV_States.sf, zcol = "party", col.regions = party_colors)
+print(party_map)
 
 
+
+```
+
+```{r}
+#Playing around with data cuts
+
+GOV_States.sf.NC <- GOV_States.sf %>%
+  filter(StateAbbreviation == "NC")
+
+party_colors_NC <- c("Democrat" = "blue",  # Assigning blue to Democratic
+                     "Republican" = "red")  # Assigning red to Republican
+
+mapview(GOV_States.sf.NC, zcol = "party", col.regions = party_colors_NC)
+
+#Note that "GOV_States.sf.NC$End_Year" is a character
+mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$End_Year == "2013", zcol = "party", col.regions = party_colors_NC)
+
+mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$End_Year == "2016", zcol = "party", col.regions = party_colors_NC)
 
 ```
 
