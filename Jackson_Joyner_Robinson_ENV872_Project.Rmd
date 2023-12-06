@@ -241,9 +241,16 @@ summary(GOV_eGRID_10_20$NAMEPCAP)
 
 #Make into time series object for nameplate cap
 
-GOV_eGRID.yearly.ts <- ts(GOV_eGRID_10_20$NAMEPCAP,
-                          start(2010),
-                          end = (2020))
+GOV_eGRID_10_20_aggregate <- GOV_eGRID_10_20 %>%
+  group_by(YEAR) %>%
+  summarize(NAMEPCAPSUM = sum(NAMEPCAP))
+
+#Drop NAs here
+
+GOV_eGRID.yearly.ts <- ts(GOV_eGRID_10_20_aggregate$NAMEPCAPSUM,
+                          start=c(2010,1),
+                          end = c(2020,1),
+                          deltat = 2)
 plot(GOV_eGRID.yearly.ts)
 
 ```
@@ -289,13 +296,34 @@ print(party_map)
 GOV_States.sf.NC <- GOV_States.sf %>%
   filter(StateAbbreviation == "NC")
 
-party_colors_NC <- c("Democrat" = "blue",  # Assigning blue to Democratic
-                     "Republican" = "red")  # Assigning red to Republican
 
 mapview(GOV_States.sf.NC, zcol = "party", col.regions = party_colors_NC)
 
+mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$year == "2013", zcol = "party", col.regions = party_colors_NC)
+
+mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$year == "2010", zcol = "party", col.regions = party_colors_NC)
+
 #Note that "GOV_States.sf.NC$End_Year" is a character
-mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$End_Year == "2013", zcol = "party", col.regions = party_colors_NC)
+mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$End_Year == "2013", zcol = "party", col.regions = party_colors_NC) +
+  mapview(Gov_eGRID.sf, subset = Gov_eGRID.sf$PSTATABB == "NC", subset = Gov_eGRID.sf$PLFUELCT == "SOLAR")
+
+
+
+
+#party_colors_NC <- c("Democrat" = "blue",
+ #                    "Republican" = "red")
+
+GOV_States.sf.NC$party <- as.factor(GOV_States.sf.NC$party)
+GOV_States.sf.NC$End_Year <- as.numeric(GOV_States.sf.NC$End_Year)
+
+
+party_colors_NC <- mapviewColors(x=GOV_States.sf.NC, 
+                                 zcol="party",
+                                 colors = c("red", "blue"),
+                                at = unique(GOV_States.sf.NC$party))
+
+
+mapview(filter(GOV_States.sf.NC,End_Year == "2013"), zcol = "party", col.regions = party_colors_NC)
 
 mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$End_Year == "2016", zcol = "party", col.regions = party_colors_NC)
 
