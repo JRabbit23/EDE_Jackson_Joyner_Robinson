@@ -22,6 +22,7 @@ getwd()
 #install.packages(zoo)
 #install.packages(kendall)
 #install.packages(tseries)
+#install.packages("corrplot")
 #install.packages(leaflet)
 
 library(readxl)
@@ -35,6 +36,7 @@ library(trend)
 library(zoo)
 library(Kendall)
 library(tseries)
+library(corrplot)
 library(leaflet)
 
 
@@ -217,33 +219,51 @@ Years_in_Office <- Gov_Data_State %>%
 # aggregating nameplate capacity by state
 GOV_eGRID_10_20_TOTAL_CAPACITY <- GOV_eGRID_10_20 %>%
   group_by(PSTATABB) %>%
-  summarize(TOTAl_NAMEPCAP = sum(NAMEPCAP))
+  summarize(TOTAL_NAMEPCAP = sum(NAMEPCAP))
 
   
 # joining datasets to create data set for regression analysis
 Capacity_by_Party <-left_join(Years_in_Office,GOV_eGRID_10_20_TOTAL_CAPACITY,by = c("StateAbbreviation"="PSTATABB"))
                                
 
+# running simple linear regression of Democratic party on nameplate capacity
+Regression_DemParty_by_Capacity <- lm(Capacity_by_Party$TOTAL_NAMEPCAP~Capacity_by_Party$total_dem_count)
 
-Regression_Party_by_Capacity <- 
+summary(Regression_DemParty_by_Capacity)
+
+# running a correlation test
+cor.test(Capacity_by_Party$TOTAL_NAMEPCAP,Capacity_by_Party$total_dem_count)
+
+
+# trying multiple linear regression
+MP_Reg_Capacity_by_Party <- lm(data=Capacity_by_Party,TOTAL_NAMEPCAP~total_dem_count+total_rep_count)
+
+summary(MP_Reg_Capacity_by_Party)
+
+# plotting regression - capacity by Dem
+ggplot(Capacity_by_Party, aes(x=total_dem_count, y=TOTAL_NAMEPCAP)) +
+  geom_point()
+
+
+# plotting regression - capacity by Rep
+ggplot(Capacity_by_Party, aes(x=total_rep_count, y=TOTAL_NAMEPCAP)) +
+  geom_point()
 
 
 
 
-
-
-
-
+Capacity_by_Party_COR <- cor(Capacity_by_Party)
+corrplot(Capacity_by_Party_COR,method="ellipse")
 
 
 
 
 #ANOVA Test for party correlative effect on nameplate capacity
-ANOVA_Capacity <- aov(data = GOV_eGRID_10_20, NAMEPCAP ~ party)
-summary(ANOVA_Capacity)
+#ANOVA_Capacity <- aov(data = GOV_eGRID_10_20, NAMEPCAP ~ party)
+#summary(ANOVA_Capacity)
 
 #Test for correlative coefficient
-cor(GOV_eGRID_10_20$party,GOV_eGRID_10_20$NAMEPCAP,method="pearson")
+#cor(GOV_eGRID_10_20$party,GOV_eGRID_10_20$NAMEPCAP,method="pearson")
 
 ```
 
