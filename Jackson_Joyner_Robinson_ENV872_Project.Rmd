@@ -253,6 +253,13 @@ GOV_eGRID.yearly.ts <- ts(GOV_eGRID_10_20_aggregate$NAMEPCAPSUM,
                           deltat = 2)
 plot(GOV_eGRID.yearly.ts)
 
+#ANOVA Test for party correlative effect on nameplate capacity
+ANOVA_Capacity <- aov(data = GOV_eGRID_10_20, NAMEPCAP ~ party)
+summary(ANOVA_Capacity)
+
+#Test for correlative coefficient
+cor(GOV_eGRID_10_20$party,GOV_eGRID_10_20$NAMEPCAP,method="pearson")
+
 ```
 
 ```{r Spatial Analysis, include=FALSE}
