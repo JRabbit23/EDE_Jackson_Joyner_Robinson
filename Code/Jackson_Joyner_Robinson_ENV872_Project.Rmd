@@ -266,13 +266,24 @@ Regression_DemParty_by_Capacity <- lm(Capacity_by_Party$TOTAL_NAMEPCAP~Capacity_
 
 summary(Regression_DemParty_by_Capacity)
 
+# results
+#The x variable is "# of years a Democratic governor was in office" and the y variable is "Total nameplate capacity from renewable energy sources".
+# Ho: There is no relationship between renewable capacity and the number of years a Democratic governor was in office.
+#Given the R-squared value, around 0.9% of the variability in total nameplate capacity from renewable energy sources is explained by the # of years a Democratic governor was in office. Given the high p-value of 0.9239, we fail to reject H0. Thus, there is no relationship between renewable capacity and the number of years a Democratic governor was in office. (Linear regression; df = 46, R-squared = 0.0002003, F-statistic = 0.009217, p-value = 0.9239)
+
 #PEARSON CORRELATION
 # running a correlation test
 cor.test(Capacity_by_Party$TOTAL_NAMEPCAP,Capacity_by_Party$total_dem_count)
 
+# results
+#The x variable is "# of years a Democratic governor was in office" and the y variable is "Total nameplate capacity from renewable energy sources".
+# The calculated correlation coefficient betwene the two variables is approximately -0.014, which suggests a very weak relationship between the variables x and y. Moreover, the high p-value means that we fail to reject the null hypothesis (that there is no correlation). Thus, it appears that there is no significant correlation between the variables. (Pearson correlation; df = 46, Correlation coefficient = -0.01415372, p-value = 0.9239, 95% confidence interval ranges from -0.2970936 to 0.2710711)
+
 #SPEARMAN CORRELATION
 #Test for correlative coefficient
 cor(Capacity_by_Party$TOTAL_NAMEPCAP,Capacity_by_Party$total_dem_count,method="spearman")
+
+#results
 
 #MULTIPLE REGRESSION
 # trying multiple linear regression
@@ -280,19 +291,26 @@ MP_Reg_Capacity_by_Party <- lm(data=Capacity_by_Party,TOTAL_NAMEPCAP~total_dem_c
 
 summary(MP_Reg_Capacity_by_Party)
 
+#results
+
 # plotting regression - capacity by Dem
 ggplot(Capacity_by_Party, aes(x=total_dem_count, y=TOTAL_NAMEPCAP)) +
   geom_point()
 
+#results
 
 # plotting regression - capacity by Rep
 ggplot(Capacity_by_Party, aes(x=total_rep_count, y=TOTAL_NAMEPCAP)) +
   geom_point()
 
+#results
+
 #ANOVA
 #ANOVA Test for party correlative effect on nameplate capacity
 ANOVA_Capacity <- aov(data = Capacity_by_Party, TOTAL_NAMEPCAP ~ total_dem_count)
 summary(ANOVA_Capacity)
+
+#results
 
 ```
 \newpage
