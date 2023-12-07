@@ -94,6 +94,24 @@ The repository contains 10 years of data (2010-2020) detailing the United State'
 2) US state governor data by party and year
 3) State geographic boundaries shapefile
 
+Table: Data Structure Summary - eGRID
+
+Detail  | Description
+:------------- | -------------:
+Data Source  | EPA
+Retrieved from  | https://www.epa.gov/egrid/download-data
+Variables Used  | PNAME, PSTATABB, NAMEPCAP, PLFUELCT, LAT, LON
+Data Range | 2010 - 2020
+
+Table: Data Structure Summary - Governors
+
+Detail  | Description
+:------------- | -------------:
+Data Source  | University of Pennsylvania
+Retrieved from  | https://www.openicpsr.org/openicpsr/project/102000/version/V3/view?path=/openicpsr/102000/fcr:versions/V3/united_states_governors_1775_2020.csv&type=file
+Variables Used  | governor, state, time_in_office, party, year
+Data Range | 1775 - 2020
+
 \newpage
 
 # Wrangling eGRID
@@ -305,8 +323,8 @@ summary(MP_Reg_Capacity_by_Party)
 cor.test(Capacity_by_Party$TOTAL_NAMEPCAP,Capacity_by_Party$total_dem_count)
 
 # results
-#The x variable is "# of years a Democratic governor was in office" and the y variable is "Total nameplate capacity from renewable energy sources".
-# The calculated correlation coefficient betwene the two variables is approximately -0.014, which suggests a very weak relationship between the variables x and y. Moreover, the high p-value means that we fail to reject the null hypothesis (that there is no correlation). Thus, it appears that there is no significant correlation between the variables. (Pearson correlation; df = 46, Correlation coefficient = -0.01415372, p-value = 0.9239, 95% confidence interval ranges from -0.2970936 to 0.2710711)
+#The x variable is "number of years a Democratic governor was in office" and the y variable is "Total nameplate capacity from renewable energy sources".
+# The calculated correlation coefficient between the two variables is approximately -0.014, which suggests a very weak relationship between the variables x and y. Moreover, the high p-value means that we fail to reject the null hypothesis (that there is no correlation). Thus, it appears that there is no significant correlation between the variables. (Pearson correlation; df = 46, Correlation coefficient = -0.01415372, p-value = 0.9239, 95% confidence interval ranges from -0.2970936 to 0.2710711))
 
 #ANOVA
 #ANOVA Test for party correlative effect on nameplate capacity
@@ -314,14 +332,13 @@ ANOVA_Capacity <- aov(data = Capacity_by_Party, TOTAL_NAMEPCAP ~ total_dem_count
 summary(ANOVA_Capacity)
 
 # results
+# Similar to the results above, the high p-value of 0.924 indicates that the relationship between "number of years a Democratic governor was in office" and "total nameplate capacity between from renewable energy sources" is not statistically significant(ANOVA; df = 1, F-value = 0.009, p-value = 0.924,).
 
 #TIME SERIES PLOT
 
 GOV_eGRID_10_20_aggregate <- GOV_eGRID_10_20 %>%
   group_by(YEAR) %>%
   summarize(NAMEPCAPSUM = sum(NAMEPCAP, na.rm = TRUE))
-
-#Drop NAs here
 
 GOV_eGRID.yearly.ts <- ts(GOV_eGRID_10_20_aggregate$NAMEPCAPSUM,
                           start=c(2010,1),
@@ -335,6 +352,11 @@ plot(GOV_eGRID.yearly.ts,
 #MANN-KENDALL TEST
 GOV_eGRID.yearly.ts.mk <- Kendall::MannKendall(GOV_eGRID.yearly.ts)
 summary(GOV_eGRID.yearly.ts.mk)
+
+# results
+# Given a p-value of less than 0.05 at 0.0085349, we reject H0 and conclude that there is a monotonic, yearly trend to the data.  Because tau is positive, we conclude that the trend is increasing (Mann-Kendall; tau = 1, p-value = 0.0085349)
+
+
 ```
 \newpage
 
@@ -467,6 +489,11 @@ print(party_map)
 \newpage
 
 # Summary and Conclusions
+#In summary, as it relates to the first research question, there is no apparent relationship #between the percent penetration of renewable energy technologies and state governor over the #period from 2010 - 2020. 
+#There are a number of important caveats to make here -- renewable energy development #depends on many factors ranging from federal incentives to state-level renewable portfolio #standards to local zoning ordinances and regulations. Moreover, the dynamics of power markets #/ grid operators (e.g., investor-owned / vertically integrated / non-competitive markets such as #in the southeast versus competitive markets such as ERCOT in Texas) are critically influential, #particularly for the process of interconnection.
+#While this project has led to some preliminary, high-level conclusions, it leads to a number of questions for further exploration: 
+#	1. What is the magnitude of changes in renewables in the three example states of California (Democratic governor for the entire time period of interest), Texas (Republican governor for the entire time period of interest), and North Carolina (both Democratic and Republican governors for the time period of interest)?
+#	2. How do local (e.g., country-level) politics influence renewable energy generation by sub-region of states?
 
 
 \newpage
