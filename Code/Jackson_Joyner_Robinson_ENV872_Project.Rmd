@@ -269,17 +269,25 @@ Capacity_by_Party <-left_join(Years_in_Office,GOV_eGRID_10_20_TOTAL_CAPACITY,by 
 #SINGLE REGRESSION
 # running simple linear regression of Democratic party on nameplate capacity
 Regression_DemParty_by_Capacity <- lm(Capacity_by_Party$TOTAL_NAMEPCAP~Capacity_by_Party$total_dem_count)
-
 summary(Regression_DemParty_by_Capacity)
 
 Regression_RepParty_by_Capacity <- lm(Capacity_by_Party$TOTAL_NAMEPCAP~Capacity_by_Party$total_rep_count)
-
 summary(Regression_RepParty_by_Capacity)
 
+# plotting single regressions - capacity by Dem
+ggplot(Capacity_by_Party, aes(x=total_dem_count, y=TOTAL_NAMEPCAP)) +
+  geom_point()
+
+# plotting single regressions - capacity by Rep
+ggplot(Capacity_by_Party, aes(x=total_rep_count, y=TOTAL_NAMEPCAP)) +
+  geom_point()
+
 # results
-#The x variable is "# of years a Democratic governor was in office" and the y variable is "Total nameplate capacity from renewable energy sources".
+#The x variable is "number of years a Democratic governor was in office" and the y variable is "Total nameplate capacity from renewable energy sources".
 # Ho: There is no relationship between renewable capacity and the number of years a Democratic governor was in office.
-#Given the R-squared value, around 0.9% of the variability in total nameplate capacity from renewable energy sources is explained by the # of years a Democratic governor was in office. Given the high p-value of 0.9239, we fail to reject H0. Thus, there is no relationship between renewable capacity and the number of years a Democratic governor was in office. (Linear regression; df = 46, R-squared = 0.0002003, F-statistic = 0.009217, p-value = 0.9239)
+#Given the R-squared value, around virtually none of the variability in total nameplate capacity from renewable energy sources is explained by the number of years a Democratic governor was in office. Given the high p-value of 0.9239, we fail to reject H0. Thus, there is no relationship between renewable capacity and the number of years a Democratic governor was in office. (Linear regression; df = 46, R-squared = 0.0002003, F-statistic = 0.009217, p-value = 0.9239)
+#Note that we can this single regression can also be applied to "# of years a Republican governor was in office" -- assuming the party is binary between Democrat and Republican, this should drive a similar regression result. Indeed, that is the case as evidenced by the analogous output for Republican governors.
+#See the below plots of these regressions which help to numerical outputs and write-ups above.
 
 #MULTIPLE REGRESSION
 # trying multiple linear regression
@@ -287,19 +295,10 @@ MP_Reg_Capacity_by_Party <- lm(data=Capacity_by_Party,TOTAL_NAMEPCAP~total_dem_c
 
 summary(MP_Reg_Capacity_by_Party)
 
-#results
-
-# plotting regression - capacity by Dem
-ggplot(Capacity_by_Party, aes(x=total_dem_count, y=TOTAL_NAMEPCAP)) +
-  geom_point()
-
-#results
-
-# plotting regression - capacity by Rep
-ggplot(Capacity_by_Party, aes(x=total_rep_count, y=TOTAL_NAMEPCAP)) +
-  geom_point()
-
-#results
+# results
+#The predictor variables are "number of years a Democratic governor was in office" and "# of years a Republican governor was in office" and the y variable is "Total nameplate capacity from renewable energy sources".
+#Given the R-squared value, virtually none of the variability in total nameplate capacity from renewable energy sources is explained by the number of years a Democratic governor was in office and the number of years that a Republican governor was in office. Given the high p-value of 0.9776, we fail to reject H0. Thus, there is no relationship between renewable capacity and the number of years a Democratic governor was in office and the number of years a Republican governor was in office. 
+#(Multiple regression; df = 45, R-squared = 0.001006, F-statistic = 0.02266, p-value = 0.9776)
 
 #PEARSON CORRELATION
 # running a correlation test
@@ -314,7 +313,7 @@ cor.test(Capacity_by_Party$TOTAL_NAMEPCAP,Capacity_by_Party$total_dem_count)
 ANOVA_Capacity <- aov(data = Capacity_by_Party, TOTAL_NAMEPCAP ~ total_dem_count)
 summary(ANOVA_Capacity)
 
-#results
+# results
 
 #TIME SERIES PLOT
 
