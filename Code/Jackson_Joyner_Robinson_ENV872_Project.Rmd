@@ -3,10 +3,10 @@ title: "Final Project"
 author: "David Robinson, Aditi Jackson, and Jonathan Joyner"
 date: "December 6th, 2023"
 output:
-  pdf_document:
-    latex_engine: pdflatex
   html_document:
     df_print: paged
+  pdf_document:
+    latex_engine: pdflatex
 always_allow_html: true
 ---
 
@@ -126,9 +126,9 @@ Data Range | 1775 - 2020
 # Wrangling eGRID
 
 ```{r Wrangle eGRID}
-# selecting data for desired columns from imported eGRID datasets
+# Selecting data for desired columns from imported eGRID datasets
 
-#Note column "PLPFGNCT" for 2010 -- note that "PLFUELCT" was dropped and replaced
+# Note column "PLPFGNCT" for 2010 -- note that "PLFUELCT" was dropped and replaced
 eGRID2010_sub <- eGRID2010 %>%
   mutate(YEAR="2010") %>%
   select(YEAR,PSTATABB,ORISPL,PNAME,PLPFGNCT,NAMEPCAP,LAT,LON)
@@ -136,7 +136,7 @@ eGRID2010_sub <- eGRID2010 %>%
 eGRID2010_sub$PLFUELCT <- eGRID2010_sub$PLPFGNCT
 eGRID2010_sub$PLPFGNCT <- NULL
 
-#Note column "PLPFGNCT" for 2012 -- note that "PLFUELCT" was dropped and replaced
+# Note column "PLPFGNCT" for 2012 -- note that "PLFUELCT" was dropped and replaced
 eGRID2012_sub <- eGRID2012 %>%
   mutate(YEAR="2012") %>%
   select(YEAR,PSTATABB,ORISPL,PNAME,PLPFGNCT,NAMEPCAP,LAT,LON)
@@ -158,14 +158,14 @@ eGRID2018_sub <- eGRID2018 %>%
 eGRID2020_sub <- eGRID2020 %>%
   select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
 
-# merging eGRID data, filtering for renewable fuels
+# Merging eGRID data, filtering for renewable fuels
 eGRID_2010_2020 <- rbind(eGRID2010_sub,eGRID2012_sub,eGRID2014_sub,eGRID2016_sub,
       eGRID2018_sub,eGRID2020_sub)
 
-# checking fuel types
+# Checking fuel types
 unique(eGRID_2010_2020$PLFUELCT)
 
-# filtering for desired fuel types
+# Filtering for desired fuel types
 eGRID_2010_2020_RENEW <- filter(eGRID_2010_2020,PLFUELCT=="SOLAR"|
                                   PLFUELCT=="WIND"|
                                   PLFUELCT=="GEOTHERMAL"|
@@ -173,16 +173,16 @@ eGRID_2010_2020_RENEW <- filter(eGRID_2010_2020,PLFUELCT=="SOLAR"|
                                   PLFUELCT=="BIOMASS"|
                                   PLFUELCT=="NUCLEAR")
 
-#Change year column to character
+# Change year column to character
 eGRID_2010_2020_RENEW$YEAR <- as.character(eGRID_2010_2020_RENEW$YEAR)
 
-# checking fuel types were filtered correctly
+# Checking fuel types were filtered correctly
 unique(eGRID_2010_2020_RENEW$PLFUELCT)
 
-# checking to ensure all years of interest are present
+# Checking to ensure all years of interest are present
 unique(eGRID_2010_2020_RENEW$YEAR)
 
-# saving process data as CSV
+# Saving process data as CSV
 write_excel_csv(eGRID_2010_2020_RENEW, 
                 path = "Data/Processed/eGRID_2010_2020_RENEW.csv")
 ```
@@ -192,51 +192,52 @@ write_excel_csv(eGRID_2010_2020_RENEW,
 
 ```{r Wrangling Gov Data}
 
-#Filtering governor data for 2010 to 2020
+# Filtering governor data for 2010 to 2020
 Gov_Data_10_20 <- filter(Gov_Data,year >= 2010)
 
-#Creating State abbreviation column for gov data
+# Creating State abbreviation column for gov data
 Gov_Data_State <- Gov_Data_10_20 %>%
   mutate(StateAbbreviation = state.abb[match(state, state.name)])
 
-#Changing year to character
+# Changing year to character
 Gov_Data_State <- Gov_Data_State %>%
   mutate(year = as.character(year))
 
-#Separating time in office column
-#Key assumption is that end year is the year to be used for analysis of political
-#Rationale -- incumbent governor is in office for the majority of this year
+# Separating time in office column
+# Key assumption is that end year is the year to be used for analysis of
+# political party
+# The rationale for this is that the incumbent governor is in office for the majority of the end year
 Gov_Data_State <- Gov_Data_State %>%
   separate(time_in_office, into = c("Start_Year", "End_Year"), sep = " - ")
 
-# filtering for columns of interest
+# Filtering for columns of interest
 States_shapefile_shp_filtered <- States_shapefile_shp %>%
   select(basename, stusab, geometry)
 
-#Merging governor data with state shape file
+# Merging governor data with state shape file
 GOV_States <- left_join(Gov_Data_State, States_shapefile_shp_filtered, by =
                           c("StateAbbreviation" = "stusab"))
 
-#Joining gov data with eGRID processed data
+# Joining gov data with eGRID processed data
 GOV_eGRID_10_20 <- left_join(eGRID_2010_2020_RENEW, Gov_Data_State,
                              by = c("PSTATABB" = "StateAbbreviation",
                                     "YEAR" = "year"))
 
-# dropping N/A's
+# Dropping N/A's
 GOV_eGRID_10_20 <- GOV_eGRID_10_20 %>%
   drop_na(LAT)
 
-#Checking years of final dataset
+# Checking years of final dataset
 unique(GOV_eGRID_10_20$YEAR)
 
-#Checking fuel types of final dataset
+# Checking fuel types of final dataset
 unique(GOV_eGRID_10_20$PLFUELCT)
 
-#Dataset information -- REVISIT THIS
+# Dataset information -- checking dimensions and column names
 dim(GOV_eGRID_10_20)
 colnames(GOV_eGRID_10_20)
 
-#Adding Final Processed file to processed folder
+# Adding Final Processed file to processed folder
 write_csv(GOV_eGRID_10_20, 
                 path = "Data/Processed/GOV_eGRID_10_20.csv")
 
@@ -247,7 +248,7 @@ write_csv(GOV_eGRID_10_20,
 # Exploratory Analysis 
 ```{r Exploratory Time Series Analysis, fig.retina=2, dev='pdf'}
 
-#Exploratory distribution analysis using box, point, and violin plot
+# Exploratory distribution analysis using box, point, and violin plot
 
 ggplot(GOV_eGRID_10_20, aes(x = YEAR, y = NAMEPCAP, color= PLFUELCT)) +
   geom_point() +
@@ -257,12 +258,12 @@ ggplot(GOV_eGRID_10_20, aes(x = YEAR, y = NAMEPCAP, color= PLFUELCT)) +
 ggplot(GOV_eGRID_10_20, aes(x = YEAR, y = NAMEPCAP)) +
   geom_boxplot() +
   ylim(0, 50) +
-  labs(x = "Year", y = "Nameplate Capacity (MW)", color = "Fuel Type")
+  labs(x = "Year", y = "Nameplate Capacity (MW)")
 
 ggplot(GOV_eGRID_10_20, aes(x = YEAR, y = NAMEPCAP)) +
   geom_violin() +
   ylim(0, 50) +
-  labs(x = "Year", y = "Nameplate Capacity (MW)", color = "Fuel Type")
+  labs(x = "Year", y = "Nameplate Capacity (MW)")
 
 Republican_Renewables <- GOV_eGRID_10_20 %>%
   filter(party == "Republican") %>%
@@ -288,26 +289,32 @@ plot(Democrat_Renewables)
 
 ```{r Regression Analysis}
 
-#WRANGLING
-# creating subset of governor data to sum no. of democrats in office by state
+# WRANGLING
+# Creating subset of governor data to sum no. of democrats in office by state
 Years_in_Office <- Gov_Data_State %>%
   mutate(dem_count = ifelse(party=="Democrat",1,0),
          rep_count=ifelse(party=="Republican",1,0))%>%
   group_by(StateAbbreviation)%>%
   summarise(total_dem_count = sum(dem_count),total_rep_count=sum(rep_count))
 
-# aggregating nameplate capacity by state
+# Aggregating nameplate capacity by state
 GOV_eGRID_10_20_TOTAL_CAPACITY <- GOV_eGRID_10_20 %>%
   group_by(PSTATABB) %>%
   summarize(TOTAL_NAMEPCAP = sum(NAMEPCAP))
 
   
-# joining datasets to create data set for regression analysis
+# Joining datasets to create data set for regression analysis
+#Note that all subsequent analyses depend on the below dataframe, which
+#aggregates nameplate capacity for each US State and the number of years across
+#the time period of interest during which a Democrat or a Republican governor
+#was in office. Structuring the data in this manner enabled statistical analysis
+#assuming a linear relationship and was per the suggestion of the course
+#instructor.
 Capacity_by_Party <-left_join(Years_in_Office,GOV_eGRID_10_20_TOTAL_CAPACITY,
                               by = c("StateAbbreviation"="PSTATABB"))
                                
-#SINGLE REGRESSION
-# running simple linear regression of Democratic party on nameplate capacity
+# SINGLE REGRESSION
+# Running simple linear regression of Democratic party on nameplate capacity
 Regression_DemParty_by_Capacity <-
   lm(Capacity_by_Party$TOTAL_NAMEPCAP~Capacity_by_Party$total_dem_count)
 summary(Regression_DemParty_by_Capacity)
@@ -316,44 +323,46 @@ Regression_RepParty_by_Capacity <-
   lm(Capacity_by_Party$TOTAL_NAMEPCAP~Capacity_by_Party$total_rep_count)
 summary(Regression_RepParty_by_Capacity)
 
-# plotting single regressions - capacity by Dem
+# Plotting single regressions - capacity by Demomcratic years in office
 ggplot(Capacity_by_Party, aes(x=total_dem_count, y=TOTAL_NAMEPCAP)) +
   geom_point() +
+  geom_smooth(method = lm) +
   labs(x = "Number of Years Democrat in Office", y = "Nameplate Capacity (MW)")
 
-# plotting single regressions - capacity by Rep
+# Plotting single regressions - capacity by Republican years in office
 ggplot(Capacity_by_Party, aes(x=total_rep_count, y=TOTAL_NAMEPCAP)) +
   geom_point() +
+  geom_smooth(method = lm) +
   labs(x = "Number of Years Republican in Office", y = "Nameplate Capacity (MW)")
 
-# results
+# Results
 #The x variable is "number of years a Democratic governor was in office" and the
 #y variable is "Total nameplate capacity from renewable energy sources".
-# Ho: There is no relationship between renewable capacity and the number of
+#Ho: There is no relationship between renewable capacity and the number of
 #years a Democratic governor was in office.
-#Given the R-squared value, around virtually none of the variability in total
+#Given the R-squared value, virtually none of the variability in total
 #nameplate capacity from renewable energy sources is explained by the number of
 #years a Democratic governor was in office. Given the high p-value of 0.9239,
 #we fail to reject H0. Thus, there is no relationship between renewable
 #capacity and the number of years a Democratic governor was in office.
 #(Linear regression; df = 46, R-squared = 0.0002003, F-statistic = 0.009217,
 #p-value = 0.9239)
-#Note that we can this single regression can also be applied to "# of years a
+#Note that this single regression can also be applied to "# of years a
 #Republican governor was in office" -- assuming the party is binary between
 #Democrat and Republican, this should drive a similar regression result.
 #Indeed, that is the case as evidenced by the analogous output for Republican
 #governors.
-#See the below plots of these regressions which help to numerical outputs and
-#write-ups above.
+#See the below plots of these regressions which help to visualize
+#the numerical outputs referenced in the write-ups above.
 
-#MULTIPLE REGRESSION
-# trying multiple linear regression
+# MULTIPLE REGRESSION
+# Running multiple linear regression
 MP_Reg_Capacity_by_Party <-
   lm(data=Capacity_by_Party,TOTAL_NAMEPCAP~total_dem_count+total_rep_count)
 
 summary(MP_Reg_Capacity_by_Party)
 
-# results
+# Results
 #The predictor variables are "number of years a Democratic governor was in
 #office" and "# of years a Republican governor was in office" and the y
 #variable is "Total nameplate capacity from renewable energy sources".
@@ -367,33 +376,34 @@ summary(MP_Reg_Capacity_by_Party)
 #(Multiple regression; df = 45, R-squared = 0.001006, F-statistic = 0.02266,
 #p-value = 0.9776)
 
-#PEARSON CORRELATION
-# running a correlation test
+# PEARSON CORRELATION
+# Running a correlation test
 cor.test(Capacity_by_Party$TOTAL_NAMEPCAP,Capacity_by_Party$total_dem_count)
 
-# results
+# Results
 #The x variable is "number of years a Democratic governor was in office" and
 #the y variable is "Total nameplate capacity from renewable energy sources".
-# The calculated correlation coefficient between the two variables is
+#The calculated correlation coefficient between the two variables is
 #approximately -0.014, which suggests a very weak relationship between the
 #variables x and y. Moreover, the high p-value means that we fail to reject
-#the null hypothesis (that there is no correlation). Thus, it appears that
-#there is no significant correlation between the variables.
+#the null hypothesis (Ho: There is no relationship between renewable capacity
+#and the number of years a Democratic governor was in office). Thus, it appears
+#that there is no significant correlation between the variables.
 #(Pearson correlation; df = 46, Correlation coefficient = -0.01415372,
-#p-value = 0.9239, 95% confidence interval ranges from -0.2970936 to 0.2710711))
+#p-value = 0.9239, 95% confidence interval ranges from -0.2970936 to 0.2710711)
 
-#ANOVA
+# ANOVA
 #ANOVA Test for party correlative effect on nameplate capacity
 ANOVA_Capacity <- aov(data = Capacity_by_Party, TOTAL_NAMEPCAP ~ total_dem_count)
 summary(ANOVA_Capacity)
 
-# results
-# Similar to the results above, the high p-value of 0.924 indicates that the
+# Results
+#Similar to the results above, the high p-value of 0.924 indicates that the
 #relationship between "number of years a Democratic governor was in office" and
 #"total nameplate capacity between from renewable energy sources" is not
-#statistically significant(ANOVA; df = 1, F-value = 0.009, p-value = 0.924,).
+#statistically significant (ANOVA; df = 1, F-value = 0.009, p-value = 0.924,).
 
-#TIME SERIES PLOT
+# TIME SERIES PLOT
 
 GOV_eGRID_10_20_aggregate <- GOV_eGRID_10_20 %>%
   group_by(YEAR) %>%
@@ -408,12 +418,12 @@ plot(GOV_eGRID.yearly.ts,
      xlab = "Year", 
      ylab = "Nameplate Capacity Sum")
 
-#MANN-KENDALL TEST
+# MANN-KENDALL TEST
 GOV_eGRID.yearly.ts.mk <- Kendall::MannKendall(GOV_eGRID.yearly.ts)
 summary(GOV_eGRID.yearly.ts.mk)
 
-# results
-# Given a p-value of less than 0.05 at 0.0085349, we reject H0 and conclude
+# Results
+#Given a p-value of less than 0.05 at 0.0085349, we reject H0 and conclude
 #that there is a monotonic, yearly trend to the data.  Because tau is positive,
 #we conclude that the trend is increasing. 
 #(Mann-Kendall; tau = 1, p-value = 0.0085349)
@@ -426,12 +436,12 @@ summary(GOV_eGRID.yearly.ts.mk)
 
 ```{r Geospatial Analysis}
 
-#EXPLORATORY
-#Viewing State Boundaries
+# EXPLORATORY
+# Viewing State Boundaries
 mapview(States_shapefile_shp)
 
-#NC GEOSPATIAL ANALYSIS
-#Viewing NC power plants in three different years
+# NC GEOSPATIAL ANALYSIS
+# Viewing NC power plants in three different years
 Gov_eGRID_NC_2012.sf <- GOV_eGRID_10_20 %>% 
   st_as_sf(coords = c('LON','LAT'), crs=4326) %>%
   filter(PSTATABB == "NC") %>%
@@ -453,30 +463,30 @@ Gov_eGRID_NC_2020.sf <- GOV_eGRID_10_20 %>%
 
 mapview(Gov_eGRID_NC_2020.sf, zcol="PLFUELCT")
 
-#Combine spatial layers for NC
-#Filter NC State Boundary by party
+# Combine spatial layers for NC
+# Filter NC State Boundary by party
 GOV_States.sf <- st_as_sf(GOV_States) %>%
   filter(StateAbbreviation == "NC")
 
-#Layering NC Boundaries and plants for 2012
+# Layering NC Boundaries and plants for 2012
 
 party_map <- mapview(GOV_States.sf, col.regions = "blue") +
   mapview(Gov_eGRID_NC_2012.sf, zcol="PLFUELCT")
 print(party_map)
 
-#Layering NC Boundaries and plants for 2016
+# Layering NC Boundaries and plants for 2016
 
 party_map <- mapview(GOV_States.sf, col.regions = "red") +
   mapview(Gov_eGRID_NC_2016.sf, zcol="PLFUELCT")
 print(party_map)
 
-#Layering NC Boundaries and plants for 2016
+# Layering NC Boundaries and plants for 2016
 party_map <- mapview(GOV_States.sf, col.regions = "blue") +
   mapview(Gov_eGRID_NC_2020.sf, zcol="PLFUELCT")
 print(party_map)
 
-#TX GEOSPATIAL ANALYSIS
-#Viewing TX power plants in three different years
+# TX GEOSPATIAL ANALYSIS
+# Viewing TX power plants in three different years
 Gov_eGRID_TX_2012.sf <- GOV_eGRID_10_20 %>% 
   st_as_sf(coords = c('LON','LAT'), crs=4326) %>%
   filter(PSTATABB == "TX") %>%
@@ -491,24 +501,24 @@ Gov_eGRID_TX_2020.sf <- GOV_eGRID_10_20 %>%
 
 mapview(Gov_eGRID_TX_2020.sf, zcol="PLFUELCT")
 
-#Combine spatial layers for TX
-#Filter NC State Boundary by party
+# Combine spatial layers for TX
+# Filter NC State Boundary by party
 GOV_States.sf <- st_as_sf(GOV_States) %>%
   filter(StateAbbreviation == "TX")
 
-#Layering TX Boundaries and plants for 2012
+# Layering TX Boundaries and plants for 2012
 
 party_map <- mapview(GOV_States.sf, col.regions = "red") +
   mapview(Gov_eGRID_TX_2012.sf, zcol="PLFUELCT")
 print(party_map)
 
-#Layering TX Boundaries and plants for 2016
+# Layering TX Boundaries and plants for 2016
 party_map <- mapview(GOV_States.sf, col.regions = "red") +
   mapview(Gov_eGRID_TX_2020.sf, zcol="PLFUELCT")
 print(party_map)
 
-#CA GEOSPATIAL ANALYSIS
-#Viewing CA power plants in three different years
+# CA GEOSPATIAL ANALYSIS
+# Viewing CA power plants in three different years
 Gov_eGRID_CA_2012.sf <- GOV_eGRID_10_20 %>% 
   st_as_sf(coords = c('LON','LAT'), crs=4326) %>%
   filter(PSTATABB == "CA") %>%
@@ -523,30 +533,33 @@ Gov_eGRID_CA_2020.sf <- GOV_eGRID_10_20 %>%
 
 mapview(Gov_eGRID_CA_2020.sf, zcol="PLFUELCT")
 
-#Combine spatial layers for TX
-#Filter CA State Boundary by party
+# Combine spatial layers for TX
+# Filter CA State Boundary by party
 GOV_States.sf <- st_as_sf(GOV_States) %>%
   filter(StateAbbreviation == "CA")
 
-#Layering CA Boundaries and plants for 2012
+# Layering CA Boundaries and plants for 2012
 
 party_map <- mapview(GOV_States.sf, col.regions = "blue") +
   mapview(Gov_eGRID_CA_2012.sf, zcol="PLFUELCT")
 print(party_map)
 
-#Layering CA Boundaries and plants for 2016
+# Layering CA Boundaries and plants for 2016
 party_map <- mapview(GOV_States.sf, col.regions = "blue") +
   mapview(Gov_eGRID_CA_2020.sf, zcol="PLFUELCT")
 print(party_map)
+
 ```
 
 \newpage
 
 # Summary and Conclusions
-#In summary, as it relates to the first research question, there is no apparent relationship #between the percent penetration of renewable energy technologies and state governor over the #period from 2010 - 2020. 
-#There are a number of important caveats to make here -- renewable energy development #depends on many factors ranging from federal incentives to state-level renewable portfolio #standards to local zoning ordinances and regulations. Moreover, the dynamics of power markets #/ grid operators (e.g., investor-owned / vertically integrated / non-competitive markets such as #in the southeast versus competitive markets such as ERCOT in Texas) are critically influential, #particularly for the process of interconnection.
-#While this project has led to some preliminary, high-level conclusions, it leads to a number of questions for further exploration: 
-#	1. What is the magnitude of changes in renewables in the three example states of California (Democratic governor for the entire time period of interest), Texas (Republican governor for the entire time period of interest), and North Carolina (both Democratic and Republican governors for the time period of interest)?
-#	2. How do local (e.g., country-level) politics influence renewable energy generation by sub-region of states?
+As it relates to the first research question, there is no apparent relationship between the percent penetration of renewable energy technologies and state governor over the period from 2010 - 2020. 
+There are a number of important caveats to make here -- renewable energy development depends on many factors ranging from federal incentives to state-level renewable portfolio standards to local zoning ordinances and regulations. Moreover, the dynamics of power markets / grid operators (e.g., investor-owned / vertically integrated / non-competitive markets such as in the southeast versus competitive markets such as ERCOT in Texas) are critically influential, particularly for the process of interconnection.
+Regarding the second research question, spatial analysis was conducted across three example states in California (Democratic governor for the entire time period of interest), Texas (Republican governor for the entire time period of interest), and North Carolina (both Democratic and Republican governors for the time period of interest). In summary, the output here shows that all three states had noticeable increases in renewable generation capacity online despite their differences in political leanings.
+While this project led to some preliminary, high-level conclusions, it prompts
+a number of questions for further exploration: 
+1. What is the magnitude of changes in renewables in the three example states of California, Texas, and North Carolina?
+2. How do local (e.g., country-level) politics influence renewable energy generation by sub-region of states?
 
 
