@@ -3,8 +3,11 @@ title: "Final Project"
 author: "David Robinson, Aditi Jackson, and Jonathan Joyner"
 date: "December 6th, 2023"
 output:
+  pdf_document:
+    latex_engine: pdflatex
   html_document:
     df_print: paged
+always_allow_html: true
 ---
 
 \newpage
@@ -146,6 +149,7 @@ unique(eGRID_2010_2020_RENEW$YEAR)
 write_excel_csv(eGRID_2010_2020_RENEW, 
                 path = "Data/Processed/eGRID_2010_2020_RENEW.csv")
 ```
+\newpage
 
 #Wrangling Gov Data
 
@@ -201,7 +205,7 @@ write_csv(GOV_eGRID_10_20,
 \newpage
 
 # Exploratory Analysis 
-```{r Exploratory Time Series Analysis, include=FALSE}
+```{r Exploratory Time Series Analysis, include=FALSE, fig.retina=2, dev='pdf'}
 
 #Exploratory distribution analysis using box, point, and violin plot
 
@@ -291,6 +295,7 @@ ANOVA_Capacity <- aov(data = Capacity_by_Party, TOTAL_NAMEPCAP ~ total_dem_count
 summary(ANOVA_Capacity)
 
 ```
+\newpage
 
 # Geospatial Analysis
 
@@ -367,7 +372,6 @@ GOV_States.sf.NC <- GOV_States.sf %>%
 ## Question 1: <insert specific question here and add additional subsections for additional questions below, if needed>
 
 ## Question 2: 
-
 
 
 
