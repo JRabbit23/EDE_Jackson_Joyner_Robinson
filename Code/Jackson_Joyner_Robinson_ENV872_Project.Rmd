@@ -1,3 +1,12 @@
+---
+title: "Final Project"
+author: "David Robinson, Aditi Jackson, and Jonathan Joyner"
+date: "December 6th, 2023"
+output:
+  html_document:
+    df_print: paged
+---
+
 \newpage
 \tableofcontents 
 \newpage
@@ -8,6 +17,7 @@
 
 ```{r setup, include=FALSE}
 # Set your working directory - EDE-Jackson_Joyner_Robinson
+setwd("C:/ENVIRON 872/EDE_Jackson_Joyner_Robinson")
 getwd()
 
 # Load your packages
@@ -39,11 +49,12 @@ library(tseries)
 library(corrplot)
 library(leaflet)
 
-
-#class(eGRID2020_Data)
-#class(Gov_Data)
 # Set your ggplot theme
-# COME BACK TO THEME
+
+mytheme <- theme_classic(base_size = 14) +
+  theme(axis.text = element_text(color = "black"), 
+        legend.position = "top")
+theme_set(mytheme)
 
 # Load your datasets
 eGRID2010 <- read_excel("Data/Raw/eGRID2010_Data.xls", 
@@ -56,9 +67,6 @@ eGRID2016 <- read_excel("Data/Raw/egrid2016_Data.xlsx",
                       sheet = "PLNT16", skip = 1)
 eGRID2018 <- read_excel("Data/Raw/eGRID2018_Data.xlsx",
                       sheet = "PLNT18", skip = 1)
-#REMOVE THIS LATER
-#eGRID2019 <- read_excel("Data/Raw/egrid2019_Data.xlsx",
- #                     sheet = "PLNT19", skip = 1)
 eGRID2020 <- read_excel("Data/Raw/eGRID2020_Data.xlsx",
                       sheet = "PLNT20", skip = 1)
 Gov_Data <- read.csv("Data/Raw/US_Governors_1775_2020.csv")
@@ -67,6 +75,17 @@ States_shapefile_shp <- st_read("Data/Raw/us-state-boundaries.shp")
 
 
 ```
+# Rationale and Research Questions
+
+To conduct a preliminary exploration of the ways in which the political systems and the electricity grid coexist, our team has formulated the following research questions:
+
+  1) What is the relationship between the percent penetration of renewable technology (i.e.,     solar, wind) and state governor (using the political affiliation of the state governor as     a proxy for a state’s political leanings) in a given year / over a period of time?
+  
+  2) Has renewable penetration grown in any states that have had a single-party governor over     a longer period of time?
+
+\newpage
+
+# Dataset Information
 
 # Wrangling eGRID
 
@@ -100,10 +119,6 @@ eGRID2016_sub <- eGRID2016 %>%
 eGRID2018_sub <- eGRID2018 %>%
   select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
 
-#REMOVE THIS LATER
-#eGRID2019_sub <- eGRID2019 %>%
- # select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
-
 eGRID2020_sub <- eGRID2020 %>%
   select(YEAR,PSTATABB,ORISPL,PNAME,PLFUELCT,NAMEPCAP,LAT,LON)
 
@@ -120,7 +135,6 @@ eGRID_2010_2020_RENEW <- filter(eGRID_2010_2020,PLFUELCT=="SOLAR"|PLFUELCT=="WIN
 
 #Change year column to character
 eGRID_2010_2020_RENEW$YEAR <- as.character(eGRID_2010_2020_RENEW$YEAR)
-#eGRID_2010_2020_RENEW$YEAR <- year(eGRID_2010_2020_RENEW$YEAR)
 
 # checking fuel types were filtered correctly
 unique(eGRID_2010_2020_RENEW$PLFUELCT)
@@ -165,7 +179,6 @@ GOV_States <- left_join(Gov_Data_State, States_shapefile_shp_filtered, by = c("S
 GOV_eGRID_10_20 <- left_join(eGRID_2010_2020_RENEW, Gov_Data_State, by = c("PSTATABB" = "StateAbbreviation", "YEAR" = "year"))
 
 # dropping N/A's
-
 GOV_eGRID_10_20 <- GOV_eGRID_10_20 %>%
   drop_na(LAT)
 
@@ -183,91 +196,12 @@ colnames(GOV_eGRID_10_20)
 write_csv(GOV_eGRID_10_20, 
                 path = "Data/Processed/GOV_eGRID_10_20.csv")
 
-
-
-
 ```
-# Rationale and Research Questions
-
-
-
-\newpage
-
-# Dataset Information
-
-
 
 \newpage
 
 # Exploratory Analysis 
-
-
-
-\newpage
-
-# Analysis
-
-```{r Regression Analysis, include=FALSE}
-
-# creating subset of governor data to sum no. of democrats in office by state
-Years_in_Office <- Gov_Data_State %>%
-  mutate(dem_count = ifelse(party=="Democrat",1,0),
-         rep_count=ifelse(party=="Republican",1,0))%>%
-  group_by(StateAbbreviation)%>%
-  summarise(total_dem_count = sum(dem_count),total_rep_count=sum(rep_count))
-
-# aggregating nameplate capacity by state
-GOV_eGRID_10_20_TOTAL_CAPACITY <- GOV_eGRID_10_20 %>%
-  group_by(PSTATABB) %>%
-  summarize(TOTAL_NAMEPCAP = sum(NAMEPCAP))
-
-  
-# joining datasets to create data set for regression analysis
-Capacity_by_Party <-left_join(Years_in_Office,GOV_eGRID_10_20_TOTAL_CAPACITY,by = c("StateAbbreviation"="PSTATABB"))
-                               
-
-# running simple linear regression of Democratic party on nameplate capacity
-Regression_DemParty_by_Capacity <- lm(Capacity_by_Party$TOTAL_NAMEPCAP~Capacity_by_Party$total_dem_count)
-
-summary(Regression_DemParty_by_Capacity)
-
-# running a correlation test
-cor.test(Capacity_by_Party$TOTAL_NAMEPCAP,Capacity_by_Party$total_dem_count)
-
-
-# trying multiple linear regression
-MP_Reg_Capacity_by_Party <- lm(data=Capacity_by_Party,TOTAL_NAMEPCAP~total_dem_count+total_rep_count)
-
-summary(MP_Reg_Capacity_by_Party)
-
-# plotting regression - capacity by Dem
-ggplot(Capacity_by_Party, aes(x=total_dem_count, y=TOTAL_NAMEPCAP)) +
-  geom_point()
-
-
-# plotting regression - capacity by Rep
-ggplot(Capacity_by_Party, aes(x=total_rep_count, y=TOTAL_NAMEPCAP)) +
-  geom_point()
-
-
-
-
-Capacity_by_Party_COR <- cor(Capacity_by_Party)
-corrplot(Capacity_by_Party_COR,method="ellipse")
-
-
-
-
-#ANOVA Test for party correlative effect on nameplate capacity
-#ANOVA_Capacity <- aov(data = GOV_eGRID_10_20, NAMEPCAP ~ party)
-#summary(ANOVA_Capacity)
-
-#Test for correlative coefficient
-#cor(GOV_eGRID_10_20$party,GOV_eGRID_10_20$NAMEPCAP,method="pearson")
-
-```
-
-```{r Time Series Analysis, include=FALSE}
+```{r Exploratory Time Series Analysis, include=FALSE}
 
 #Exploratory distribution analysis using box, point, and violin plot
 
@@ -297,58 +231,96 @@ Democrat_Renewables <- GOV_eGRID_10_20 %>%
   ylim(0, 5000)
 plot(Democrat_Renewables)
 
-#check NAs
+```
 
-summary(GOV_eGRID_10_20$NAMEPCAP)
+\newpage
 
-#Make into time series object for nameplate cap
+# Analysis
 
-GOV_eGRID_10_20_aggregate <- GOV_eGRID_10_20 %>%
-  group_by(YEAR) %>%
-  summarize(NAMEPCAPSUM = sum(NAMEPCAP))
+```{r Regression Analysis, include=FALSE}
 
-#Drop NAs here
+#WRANGLING
+# creating subset of governor data to sum no. of democrats in office by state
+Years_in_Office <- Gov_Data_State %>%
+  mutate(dem_count = ifelse(party=="Democrat",1,0),
+         rep_count=ifelse(party=="Republican",1,0))%>%
+  group_by(StateAbbreviation)%>%
+  summarise(total_dem_count = sum(dem_count),total_rep_count=sum(rep_count))
 
-GOV_eGRID.yearly.ts <- ts(GOV_eGRID_10_20_aggregate$NAMEPCAPSUM,
-                          start=c(2010,1),
-                          end = c(2020,1),
-                          deltat = 2)
-plot(GOV_eGRID.yearly.ts)
+# aggregating nameplate capacity by state
+GOV_eGRID_10_20_TOTAL_CAPACITY <- GOV_eGRID_10_20 %>%
+  group_by(PSTATABB) %>%
+  summarize(TOTAL_NAMEPCAP = sum(NAMEPCAP))
 
+  
+# joining datasets to create data set for regression analysis
+Capacity_by_Party <-left_join(Years_in_Office,GOV_eGRID_10_20_TOTAL_CAPACITY,by = c("StateAbbreviation"="PSTATABB"))
+                               
+#SINGLE REGRESSION
+# running simple linear regression of Democratic party on nameplate capacity
+Regression_DemParty_by_Capacity <- lm(Capacity_by_Party$TOTAL_NAMEPCAP~Capacity_by_Party$total_dem_count)
+
+summary(Regression_DemParty_by_Capacity)
+
+#PEARSON CORRELATION
+# running a correlation test
+cor.test(Capacity_by_Party$TOTAL_NAMEPCAP,Capacity_by_Party$total_dem_count)
+
+#SPEARMAN CORRELATION
+#Test for correlative coefficient
+cor(Capacity_by_Party$TOTAL_NAMEPCAP,Capacity_by_Party$total_dem_count,method="spearman")
+
+#MULTIPLE REGRESSION
+# trying multiple linear regression
+MP_Reg_Capacity_by_Party <- lm(data=Capacity_by_Party,TOTAL_NAMEPCAP~total_dem_count+total_rep_count)
+
+summary(MP_Reg_Capacity_by_Party)
+
+# plotting regression - capacity by Dem
+ggplot(Capacity_by_Party, aes(x=total_dem_count, y=TOTAL_NAMEPCAP)) +
+  geom_point()
+
+
+# plotting regression - capacity by Rep
+ggplot(Capacity_by_Party, aes(x=total_rep_count, y=TOTAL_NAMEPCAP)) +
+  geom_point()
+
+#ANOVA
+#ANOVA Test for party correlative effect on nameplate capacity
+ANOVA_Capacity <- aov(data = Capacity_by_Party, TOTAL_NAMEPCAP ~ total_dem_count)
+summary(ANOVA_Capacity)
 
 ```
 
-```{r Spatial Analysis, include=FALSE}
+# Geospatial Analysis
 
-#Exploratory
+```{r Geospatial Analysis, include=FALSE}
+
+#EXPLORATORY
+#Viewing State Boundaries
 mapview(States_shapefile_shp)
-
-mapview(GOV_eGRID_10_20)
-
-# spatial analysis
 
 #Viewing power plants
 Gov_eGRID.sf <- GOV_eGRID_10_20 %>% 
-  st_as_sf(coords = c('LON','LAT'),
-           crs=4326)
+  st_as_sf(coords = c('LON','LAT'), crs=4326) %>%
+  filter(PSTATABB == "NC")
 
 mapview(Gov_eGRID.sf, zcol="PLFUELCT")
 
-#
-GOV_States.sf <- st_as_sf(GOV_States)
+#COMBINE SPATIAL
+#Layering Boundaries and plants
+GOV_States.sf <- st_as_sf(GOV_States) %>%
+  filter(StateAbbreviation == "NC")
 
 mapview(GOV_States.sf, zcol = "party") +
   mapview(Gov_eGRID.sf, zcol="PLFUELCT")
 
-party_colors <- c(" " = "white",
-                  "Democratic" = "blue",  # Assigning blue to Democratic
-                  "Independent" = "gray",
-                  "New Progressive Party (Puerto Rico)" = "black",
-                  "Popular Democratic Party" = "yellow",
+party_colors <- c("Democratic" = "blue",  # Assigning blue to Democratic
                   "Republican" = "red"  # Assigning red to Republican
                   )
 
-party_map <- mapview(GOV_States.sf, zcol = "party", col.regions = party_colors)
+party_map <- mapview(GOV_States.sf, zcol = "party", col.regions = party_colors) +
+  mapview(Gov_eGRID.sf, zcol="PLFUELCT")
 print(party_map)
 
 ```
@@ -360,15 +332,15 @@ GOV_States.sf.NC <- GOV_States.sf %>%
   filter(StateAbbreviation == "NC")
 
 
-mapview(GOV_States.sf.NC, zcol = "party", col.regions = party_colors_NC)
+#mapview(GOV_States.sf.NC, zcol = "party", col.regions = party_colors_NC)
 
-mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$year == "2013", zcol = "party", col.regions = party_colors_NC)
+#mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$year == "2013", zcol = "party", col.regions = party_colors_NC)
 
-mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$year == "2010", zcol = "party", col.regions = party_colors_NC)
+#mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$year == "2010", zcol = "party", col.regions = party_colors_NC)
 
 #Note that "GOV_States.sf.NC$End_Year" is a character
-mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$End_Year == "2013", zcol = "party", col.regions = party_colors_NC) +
-  mapview(Gov_eGRID.sf, subset = Gov_eGRID.sf$PSTATABB == "NC", subset = Gov_eGRID.sf$PLFUELCT == "SOLAR")
+#mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$End_Year == "2013", zcol = "party", col.regions = party_colors_NC) +
+ #mapview(Gov_eGRID.sf, subset = Gov_eGRID.sf$PSTATABB == "NC", subset = #Gov_eGRID.sf$PLFUELCT == "SOLAR")
 
 
 
@@ -376,19 +348,19 @@ mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$End_Year == "2013", zcol = "
 #party_colors_NC <- c("Democrat" = "blue",
  #                    "Republican" = "red")
 
-GOV_States.sf.NC$party <- as.factor(GOV_States.sf.NC$party)
-GOV_States.sf.NC$End_Year <- as.numeric(GOV_States.sf.NC$End_Year)
+#GOV_States.sf.NC$party <- as.factor(GOV_States.sf.NC$party)
+#GOV_States.sf.NC$End_Year <- as.numeric(GOV_States.sf.NC$End_Year)
 
 
-party_colors_NC <- mapviewColors(x=GOV_States.sf.NC, 
-                                 zcol="party",
-                                 colors = c("red", "blue"),
-                                at = unique(GOV_States.sf.NC$party))
+#party_colors_NC <- mapviewColors(x=GOV_States.sf.NC, 
+                                 #zcol="party",
+                                 #colors = c("red", "blue"),
+                                #at = unique(GOV_States.sf.NC$party))
 
 
-mapview(filter(GOV_States.sf.NC,End_Year == "2013"), zcol = "party", col.regions = party_colors_NC)
+#mapview(filter(GOV_States.sf.NC,End_Year == "2013"), zcol = "party", col.regions = party_colors_NC)
 
-mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$End_Year == "2016", zcol = "party", col.regions = party_colors_NC)
+#mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$End_Year == "2016", zcol = "party", col.regions = party_colors_NC)
 
 ```
 
