@@ -18,9 +18,16 @@ always_allow_html: true
 \listoffigures 
 \newpage
 
+```{r Global options for code chunks, echo=TRUE}
+# setting Global options for code chunks 
+knitr::opts_chunk$set
+
+```
+
+
 ```{r setup, include=FALSE}
 # Set your working directory - EDE-Jackson_Joyner_Robinson
-setwd("C:/ENVIRON 872/EDE_Jackson_Joyner_Robinson")
+#setwd("C:/ENVIRON 872/EDE_Jackson_Joyner_Robinson")
 getwd()
 
 # Load your packages
@@ -103,6 +110,8 @@ Retrieved from  | https://www.epa.gov/egrid/download-data
 Variables Used  | PNAME, PSTATABB, NAMEPCAP, PLFUELCT, LAT, LON
 Data Range | 2010 - 2020
 
+\newpage
+
 Table: Data Structure Summary - Governors
 
 Detail  | Description
@@ -157,8 +166,12 @@ eGRID_2010_2020 <- rbind(eGRID2010_sub,eGRID2012_sub,eGRID2014_sub,eGRID2016_sub
 unique(eGRID_2010_2020$PLFUELCT)
 
 # filtering for desired fuel types
-eGRID_2010_2020_RENEW <- filter(eGRID_2010_2020,PLFUELCT=="SOLAR"|PLFUELCT=="WIND"|PLFUELCT=="GEOTHERMAL"|
-          PLFUELCT=="HYDRO"|PLFUELCT=="BIOMASS"|PLFUELCT=="NUCLEAR")
+eGRID_2010_2020_RENEW <- filter(eGRID_2010_2020,PLFUELCT=="SOLAR"|
+                                  PLFUELCT=="WIND"|
+                                  PLFUELCT=="GEOTHERMAL"|
+                                  PLFUELCT=="HYDRO"|
+                                  PLFUELCT=="BIOMASS"|
+                                  PLFUELCT=="NUCLEAR")
 
 #Change year column to character
 eGRID_2010_2020_RENEW$YEAR <- as.character(eGRID_2010_2020_RENEW$YEAR)
@@ -175,9 +188,9 @@ write_excel_csv(eGRID_2010_2020_RENEW,
 ```
 \newpage
 
-#Wrangling Gov Data
+# Wrangling Gov Data
 
-```{r Wrangling Gov Data, include=FALSE}
+```{r Wrangling Gov Data}
 
 #Filtering governor data for 2010 to 2020
 Gov_Data_10_20 <- filter(Gov_Data,year >= 2010)
@@ -201,10 +214,13 @@ States_shapefile_shp_filtered <- States_shapefile_shp %>%
   select(basename, stusab, geometry)
 
 #Merging governor data with state shape file
-GOV_States <- left_join(Gov_Data_State, States_shapefile_shp_filtered, by = c("StateAbbreviation" = "stusab"))
+GOV_States <- left_join(Gov_Data_State, States_shapefile_shp_filtered, by =
+                          c("StateAbbreviation" = "stusab"))
 
 #Joining gov data with eGRID processed data
-GOV_eGRID_10_20 <- left_join(eGRID_2010_2020_RENEW, Gov_Data_State, by = c("PSTATABB" = "StateAbbreviation", "YEAR" = "year"))
+GOV_eGRID_10_20 <- left_join(eGRID_2010_2020_RENEW, Gov_Data_State,
+                             by = c("PSTATABB" = "StateAbbreviation",
+                                    "YEAR" = "year"))
 
 # dropping N/A's
 GOV_eGRID_10_20 <- GOV_eGRID_10_20 %>%
@@ -229,34 +245,39 @@ write_csv(GOV_eGRID_10_20,
 \newpage
 
 # Exploratory Analysis 
-```{r Exploratory Time Series Analysis, include=FALSE, fig.retina=2, dev='pdf'}
+```{r Exploratory Time Series Analysis, fig.retina=2, dev='pdf'}
 
 #Exploratory distribution analysis using box, point, and violin plot
 
 ggplot(GOV_eGRID_10_20, aes(x = YEAR, y = NAMEPCAP, color= PLFUELCT)) +
   geom_point() +
-  ylim(0, 5000)
+  ylim(0, 5000) +
+  labs(x = "Year", y = "Nameplate Capacity (MW)", color = "Fuel Type")
 
 ggplot(GOV_eGRID_10_20, aes(x = YEAR, y = NAMEPCAP)) +
   geom_boxplot() +
-  ylim(0, 50)
+  ylim(0, 50) +
+  labs(x = "Year", y = "Nameplate Capacity (MW)", color = "Fuel Type")
 
 ggplot(GOV_eGRID_10_20, aes(x = YEAR, y = NAMEPCAP)) +
   geom_violin() +
-  ylim(0, 50)
+  ylim(0, 50) +
+  labs(x = "Year", y = "Nameplate Capacity (MW)", color = "Fuel Type")
 
 Republican_Renewables <- GOV_eGRID_10_20 %>%
   filter(party == "Republican") %>%
   ggplot(aes(x = YEAR, y = NAMEPCAP, color = PLFUELCT)) +
   geom_point() +
-  ylim(0, 5000)
+  ylim(0, 5000) +
+  labs(x = "Year", y = "Nameplate Capacity (MW)", color = "Fuel Type")
 plot(Republican_Renewables)
 
 Democrat_Renewables <- GOV_eGRID_10_20 %>%
   filter(party == "Democrat") %>%
   ggplot(aes(x = YEAR, y = NAMEPCAP, color = PLFUELCT)) +
   geom_point() +
-  ylim(0, 5000)
+  ylim(0, 5000) +
+  labs(x = "Year", y = "Nameplate Capacity (MW)", color = "Fuel Type")
 plot(Democrat_Renewables)
 
 ```
@@ -265,7 +286,7 @@ plot(Democrat_Renewables)
 
 # Analysis
 
-```{r Regression Analysis, include=FALSE}
+```{r Regression Analysis}
 
 #WRANGLING
 # creating subset of governor data to sum no. of democrats in office by state
@@ -282,49 +303,84 @@ GOV_eGRID_10_20_TOTAL_CAPACITY <- GOV_eGRID_10_20 %>%
 
   
 # joining datasets to create data set for regression analysis
-Capacity_by_Party <-left_join(Years_in_Office,GOV_eGRID_10_20_TOTAL_CAPACITY,by = c("StateAbbreviation"="PSTATABB"))
+Capacity_by_Party <-left_join(Years_in_Office,GOV_eGRID_10_20_TOTAL_CAPACITY,
+                              by = c("StateAbbreviation"="PSTATABB"))
                                
 #SINGLE REGRESSION
 # running simple linear regression of Democratic party on nameplate capacity
-Regression_DemParty_by_Capacity <- lm(Capacity_by_Party$TOTAL_NAMEPCAP~Capacity_by_Party$total_dem_count)
+Regression_DemParty_by_Capacity <-
+  lm(Capacity_by_Party$TOTAL_NAMEPCAP~Capacity_by_Party$total_dem_count)
 summary(Regression_DemParty_by_Capacity)
 
-Regression_RepParty_by_Capacity <- lm(Capacity_by_Party$TOTAL_NAMEPCAP~Capacity_by_Party$total_rep_count)
+Regression_RepParty_by_Capacity <-
+  lm(Capacity_by_Party$TOTAL_NAMEPCAP~Capacity_by_Party$total_rep_count)
 summary(Regression_RepParty_by_Capacity)
 
 # plotting single regressions - capacity by Dem
 ggplot(Capacity_by_Party, aes(x=total_dem_count, y=TOTAL_NAMEPCAP)) +
-  geom_point()
+  geom_point() +
+  labs(x = "Number of Years Democrat in Office", y = "Nameplate Capacity (MW)")
 
 # plotting single regressions - capacity by Rep
 ggplot(Capacity_by_Party, aes(x=total_rep_count, y=TOTAL_NAMEPCAP)) +
-  geom_point()
+  geom_point() +
+  labs(x = "Number of Years Republican in Office", y = "Nameplate Capacity (MW)")
 
 # results
-#The x variable is "number of years a Democratic governor was in office" and the y variable is "Total nameplate capacity from renewable energy sources".
-# Ho: There is no relationship between renewable capacity and the number of years a Democratic governor was in office.
-#Given the R-squared value, around virtually none of the variability in total nameplate capacity from renewable energy sources is explained by the number of years a Democratic governor was in office. Given the high p-value of 0.9239, we fail to reject H0. Thus, there is no relationship between renewable capacity and the number of years a Democratic governor was in office. (Linear regression; df = 46, R-squared = 0.0002003, F-statistic = 0.009217, p-value = 0.9239)
-#Note that we can this single regression can also be applied to "# of years a Republican governor was in office" -- assuming the party is binary between Democrat and Republican, this should drive a similar regression result. Indeed, that is the case as evidenced by the analogous output for Republican governors.
-#See the below plots of these regressions which help to numerical outputs and write-ups above.
+#The x variable is "number of years a Democratic governor was in office" and the
+#y variable is "Total nameplate capacity from renewable energy sources".
+# Ho: There is no relationship between renewable capacity and the number of
+#years a Democratic governor was in office.
+#Given the R-squared value, around virtually none of the variability in total
+#nameplate capacity from renewable energy sources is explained by the number of
+#years a Democratic governor was in office. Given the high p-value of 0.9239,
+#we fail to reject H0. Thus, there is no relationship between renewable
+#capacity and the number of years a Democratic governor was in office.
+#(Linear regression; df = 46, R-squared = 0.0002003, F-statistic = 0.009217,
+#p-value = 0.9239)
+#Note that we can this single regression can also be applied to "# of years a
+#Republican governor was in office" -- assuming the party is binary between
+#Democrat and Republican, this should drive a similar regression result.
+#Indeed, that is the case as evidenced by the analogous output for Republican
+#governors.
+#See the below plots of these regressions which help to numerical outputs and
+#write-ups above.
 
 #MULTIPLE REGRESSION
 # trying multiple linear regression
-MP_Reg_Capacity_by_Party <- lm(data=Capacity_by_Party,TOTAL_NAMEPCAP~total_dem_count+total_rep_count)
+MP_Reg_Capacity_by_Party <-
+  lm(data=Capacity_by_Party,TOTAL_NAMEPCAP~total_dem_count+total_rep_count)
 
 summary(MP_Reg_Capacity_by_Party)
 
 # results
-#The predictor variables are "number of years a Democratic governor was in office" and "# of years a Republican governor was in office" and the y variable is "Total nameplate capacity from renewable energy sources".
-#Given the R-squared value, virtually none of the variability in total nameplate capacity from renewable energy sources is explained by the number of years a Democratic governor was in office and the number of years that a Republican governor was in office. Given the high p-value of 0.9776, we fail to reject H0. Thus, there is no relationship between renewable capacity and the number of years a Democratic governor was in office and the number of years a Republican governor was in office. 
-#(Multiple regression; df = 45, R-squared = 0.001006, F-statistic = 0.02266, p-value = 0.9776)
+#The predictor variables are "number of years a Democratic governor was in
+#office" and "# of years a Republican governor was in office" and the y
+#variable is "Total nameplate capacity from renewable energy sources".
+#Given the R-squared value, virtually none of the variability in total
+#nameplate capacity from renewable energy sources is explained by the number of
+#years a Democratic governor was in office and the number of years that a
+#Republican governor was in office. Given the high p-value of 0.9776, we fail
+#to reject H0. Thus, there is no relationship between renewable capacity and
+#the number of years a Democratic governor was in office and the number of
+#years a Republican governor was in office. 
+#(Multiple regression; df = 45, R-squared = 0.001006, F-statistic = 0.02266,
+#p-value = 0.9776)
 
 #PEARSON CORRELATION
 # running a correlation test
 cor.test(Capacity_by_Party$TOTAL_NAMEPCAP,Capacity_by_Party$total_dem_count)
 
 # results
-#The x variable is "number of years a Democratic governor was in office" and the y variable is "Total nameplate capacity from renewable energy sources".
-# The calculated correlation coefficient between the two variables is approximately -0.014, which suggests a very weak relationship between the variables x and y. Moreover, the high p-value means that we fail to reject the null hypothesis (that there is no correlation). Thus, it appears that there is no significant correlation between the variables. (Pearson correlation; df = 46, Correlation coefficient = -0.01415372, p-value = 0.9239, 95% confidence interval ranges from -0.2970936 to 0.2710711))
+#The x variable is "number of years a Democratic governor was in office" and
+#the y variable is "Total nameplate capacity from renewable energy sources".
+# The calculated correlation coefficient between the two variables is
+#approximately -0.014, which suggests a very weak relationship between the
+#variables x and y. Moreover, the high p-value means that we fail to reject
+#the null hypothesis (that there is no correlation). Thus, it appears that
+#there is no significant correlation between the variables.
+#(Pearson correlation; df = 46, Correlation coefficient = -0.01415372,
+#p-value = 0.9239, 95% confidence interval ranges from -0.2970936 to 0.2710711))
 
 #ANOVA
 #ANOVA Test for party correlative effect on nameplate capacity
@@ -332,7 +388,10 @@ ANOVA_Capacity <- aov(data = Capacity_by_Party, TOTAL_NAMEPCAP ~ total_dem_count
 summary(ANOVA_Capacity)
 
 # results
-# Similar to the results above, the high p-value of 0.924 indicates that the relationship between "number of years a Democratic governor was in office" and "total nameplate capacity between from renewable energy sources" is not statistically significant(ANOVA; df = 1, F-value = 0.009, p-value = 0.924,).
+# Similar to the results above, the high p-value of 0.924 indicates that the
+#relationship between "number of years a Democratic governor was in office" and
+#"total nameplate capacity between from renewable energy sources" is not
+#statistically significant(ANOVA; df = 1, F-value = 0.009, p-value = 0.924,).
 
 #TIME SERIES PLOT
 
@@ -354,7 +413,10 @@ GOV_eGRID.yearly.ts.mk <- Kendall::MannKendall(GOV_eGRID.yearly.ts)
 summary(GOV_eGRID.yearly.ts.mk)
 
 # results
-# Given a p-value of less than 0.05 at 0.0085349, we reject H0 and conclude that there is a monotonic, yearly trend to the data.  Because tau is positive, we conclude that the trend is increasing (Mann-Kendall; tau = 1, p-value = 0.0085349)
+# Given a p-value of less than 0.05 at 0.0085349, we reject H0 and conclude
+#that there is a monotonic, yearly trend to the data.  Because tau is positive,
+#we conclude that the trend is increasing. 
+#(Mann-Kendall; tau = 1, p-value = 0.0085349)
 
 
 ```
@@ -362,7 +424,7 @@ summary(GOV_eGRID.yearly.ts.mk)
 
 # Geospatial Analysis
 
-```{r Geospatial Analysis, include=FALSE}
+```{r Geospatial Analysis}
 
 #EXPLORATORY
 #Viewing State Boundaries
@@ -480,14 +542,6 @@ print(party_map)
 
 \newpage
 
-## Question 1: <insert specific question here and add additional subsections for additional questions below, if needed>
-
-## Question 2: 
-
-
-
-\newpage
-
 # Summary and Conclusions
 #In summary, as it relates to the first research question, there is no apparent relationship #between the percent penetration of renewable energy technologies and state governor over the #period from 2010 - 2020. 
 #There are a number of important caveats to make here -- renewable energy development #depends on many factors ranging from federal incentives to state-level renewable portfolio #standards to local zoning ordinances and regulations. Moreover, the dynamics of power markets #/ grid operators (e.g., investor-owned / vertically integrated / non-competitive markets such as #in the southeast versus competitive markets such as ERCOT in Texas) are critically influential, #particularly for the process of interconnection.
@@ -496,7 +550,3 @@ print(party_map)
 #	2. How do local (e.g., country-level) politics influence renewable energy generation by sub-region of states?
 
 
-\newpage
-
-# References
-<add references here if relevant, otherwise delete this section> 
