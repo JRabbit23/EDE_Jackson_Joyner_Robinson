@@ -86,9 +86,15 @@ To conduct a preliminary exploration of the ways in which the political systems 
   
   2) Has renewable penetration grown in any states that have had a single-party governor over     a longer period of time?
 
-\newpage
-
 # Dataset Information
+This dataset was prepared in Fall 2023 as a final project for Environmental Data Analytics (ENV 872) at Duke University's Nicholas School of the Environment.
+
+The repository contains 10 years of data (2010-2020) detailing the United State's renewable energy generation capacity by governing state political party. There are three main categories for our dataset. They are:
+1) eGRID plant data with coordinates
+2) US state governor data by party and year
+3) State geographic boundaries shapefile
+
+\newpage
 
 # Wrangling eGRID
 
@@ -266,24 +272,14 @@ Regression_DemParty_by_Capacity <- lm(Capacity_by_Party$TOTAL_NAMEPCAP~Capacity_
 
 summary(Regression_DemParty_by_Capacity)
 
+Regression_RepParty_by_Capacity <- lm(Capacity_by_Party$TOTAL_NAMEPCAP~Capacity_by_Party$total_rep_count)
+
+summary(Regression_RepParty_by_Capacity)
+
 # results
 #The x variable is "# of years a Democratic governor was in office" and the y variable is "Total nameplate capacity from renewable energy sources".
 # Ho: There is no relationship between renewable capacity and the number of years a Democratic governor was in office.
 #Given the R-squared value, around 0.9% of the variability in total nameplate capacity from renewable energy sources is explained by the # of years a Democratic governor was in office. Given the high p-value of 0.9239, we fail to reject H0. Thus, there is no relationship between renewable capacity and the number of years a Democratic governor was in office. (Linear regression; df = 46, R-squared = 0.0002003, F-statistic = 0.009217, p-value = 0.9239)
-
-#PEARSON CORRELATION
-# running a correlation test
-cor.test(Capacity_by_Party$TOTAL_NAMEPCAP,Capacity_by_Party$total_dem_count)
-
-# results
-#The x variable is "# of years a Democratic governor was in office" and the y variable is "Total nameplate capacity from renewable energy sources".
-# The calculated correlation coefficient betwene the two variables is approximately -0.014, which suggests a very weak relationship between the variables x and y. Moreover, the high p-value means that we fail to reject the null hypothesis (that there is no correlation). Thus, it appears that there is no significant correlation between the variables. (Pearson correlation; df = 46, Correlation coefficient = -0.01415372, p-value = 0.9239, 95% confidence interval ranges from -0.2970936 to 0.2710711)
-
-#SPEARMAN CORRELATION
-#Test for correlative coefficient
-cor(Capacity_by_Party$TOTAL_NAMEPCAP,Capacity_by_Party$total_dem_count,method="spearman")
-
-#results
 
 #MULTIPLE REGRESSION
 # trying multiple linear regression
@@ -305,6 +301,14 @@ ggplot(Capacity_by_Party, aes(x=total_rep_count, y=TOTAL_NAMEPCAP)) +
 
 #results
 
+#PEARSON CORRELATION
+# running a correlation test
+cor.test(Capacity_by_Party$TOTAL_NAMEPCAP,Capacity_by_Party$total_dem_count)
+
+# results
+#The x variable is "# of years a Democratic governor was in office" and the y variable is "Total nameplate capacity from renewable energy sources".
+# The calculated correlation coefficient betwene the two variables is approximately -0.014, which suggests a very weak relationship between the variables x and y. Moreover, the high p-value means that we fail to reject the null hypothesis (that there is no correlation). Thus, it appears that there is no significant correlation between the variables. (Pearson correlation; df = 46, Correlation coefficient = -0.01415372, p-value = 0.9239, 95% confidence interval ranges from -0.2970936 to 0.2710711)
+
 #ANOVA
 #ANOVA Test for party correlative effect on nameplate capacity
 ANOVA_Capacity <- aov(data = Capacity_by_Party, TOTAL_NAMEPCAP ~ total_dem_count)
@@ -312,6 +316,26 @@ summary(ANOVA_Capacity)
 
 #results
 
+#TIME SERIES PLOT
+
+GOV_eGRID_10_20_aggregate <- GOV_eGRID_10_20 %>%
+  group_by(YEAR) %>%
+  summarize(NAMEPCAPSUM = sum(NAMEPCAP, na.rm = TRUE))
+
+#Drop NAs here
+
+GOV_eGRID.yearly.ts <- ts(GOV_eGRID_10_20_aggregate$NAMEPCAPSUM,
+                          start=c(2010,1),
+                          end = c(2020,1),
+                          deltat = 2)
+plot(GOV_eGRID.yearly.ts, 
+     main = "Yearly Nameplate Capacity Sum", 
+     xlab = "Year", 
+     ylab = "Nameplate Capacity Sum")
+
+#MANN-KENDALL TEST
+GOV_eGRID.yearly.ts.mk <- Kendall::MannKendall(GOV_eGRID.yearly.ts)
+summary(GOV_eGRID.yearly.ts.mk)
 ```
 \newpage
 
@@ -323,69 +347,117 @@ summary(ANOVA_Capacity)
 #Viewing State Boundaries
 mapview(States_shapefile_shp)
 
-#Viewing power plants
-Gov_eGRID.sf <- GOV_eGRID_10_20 %>% 
+#NC GEOSPATIAL ANALYSIS
+#Viewing NC power plants in three different years
+Gov_eGRID_NC_2012.sf <- GOV_eGRID_10_20 %>% 
   st_as_sf(coords = c('LON','LAT'), crs=4326) %>%
-  filter(PSTATABB == "NC")
+  filter(PSTATABB == "NC") %>%
+  filter(YEAR == 2010:2012)
 
-mapview(Gov_eGRID.sf, zcol="PLFUELCT")
+mapview(Gov_eGRID_NC_2012.sf, zcol="PLFUELCT")
 
-#COMBINE SPATIAL
-#Layering Boundaries and plants
+Gov_eGRID_NC_2016.sf <- GOV_eGRID_10_20 %>% 
+  st_as_sf(coords = c('LON','LAT'), crs=4326) %>%
+  filter(PSTATABB == "NC") %>%
+  filter(YEAR == 2010:2016)
+
+mapview(Gov_eGRID_NC_2016.sf, zcol="PLFUELCT")
+
+Gov_eGRID_NC_2020.sf <- GOV_eGRID_10_20 %>% 
+  st_as_sf(coords = c('LON','LAT'), crs=4326) %>%
+  filter(PSTATABB == "NC") %>%
+  filter(YEAR == 2010:2020)
+
+mapview(Gov_eGRID_NC_2020.sf, zcol="PLFUELCT")
+
+#Combine spatial layers for NC
+#Filter NC State Boundary by party
 GOV_States.sf <- st_as_sf(GOV_States) %>%
   filter(StateAbbreviation == "NC")
 
-mapview(GOV_States.sf, zcol = "party") +
-  mapview(Gov_eGRID.sf, zcol="PLFUELCT")
+#Layering NC Boundaries and plants for 2012
 
-party_colors <- c("Democratic" = "blue",  # Assigning blue to Democratic
-                  "Republican" = "red"  # Assigning red to Republican
-                  )
-
-party_map <- mapview(GOV_States.sf, zcol = "party", col.regions = party_colors) +
-  mapview(Gov_eGRID.sf, zcol="PLFUELCT")
+party_map <- mapview(GOV_States.sf, col.regions = "blue") +
+  mapview(Gov_eGRID_NC_2012.sf, zcol="PLFUELCT")
 print(party_map)
 
+#Layering NC Boundaries and plants for 2016
+
+party_map <- mapview(GOV_States.sf, col.regions = "red") +
+  mapview(Gov_eGRID_NC_2016.sf, zcol="PLFUELCT")
+print(party_map)
+
+#Layering NC Boundaries and plants for 2016
+party_map <- mapview(GOV_States.sf, col.regions = "blue") +
+  mapview(Gov_eGRID_NC_2020.sf, zcol="PLFUELCT")
+print(party_map)
+
+#TX GEOSPATIAL ANALYSIS
+#Viewing TX power plants in three different years
+Gov_eGRID_TX_2012.sf <- GOV_eGRID_10_20 %>% 
+  st_as_sf(coords = c('LON','LAT'), crs=4326) %>%
+  filter(PSTATABB == "TX") %>%
+  filter(YEAR == 2012)
+
+mapview(Gov_eGRID_TX_2012.sf, zcol="PLFUELCT")
+
+Gov_eGRID_TX_2020.sf <- GOV_eGRID_10_20 %>% 
+  st_as_sf(coords = c('LON','LAT'), crs=4326) %>%
+  filter(PSTATABB == "TX") %>%
+  filter(YEAR == 2012:2020)
+
+mapview(Gov_eGRID_TX_2020.sf, zcol="PLFUELCT")
+
+#Combine spatial layers for TX
+#Filter NC State Boundary by party
+GOV_States.sf <- st_as_sf(GOV_States) %>%
+  filter(StateAbbreviation == "TX")
+
+#Layering TX Boundaries and plants for 2012
+
+party_map <- mapview(GOV_States.sf, col.regions = "red") +
+  mapview(Gov_eGRID_TX_2012.sf, zcol="PLFUELCT")
+print(party_map)
+
+#Layering TX Boundaries and plants for 2016
+party_map <- mapview(GOV_States.sf, col.regions = "red") +
+  mapview(Gov_eGRID_TX_2020.sf, zcol="PLFUELCT")
+print(party_map)
+
+#CA GEOSPATIAL ANALYSIS
+#Viewing CA power plants in three different years
+Gov_eGRID_CA_2012.sf <- GOV_eGRID_10_20 %>% 
+  st_as_sf(coords = c('LON','LAT'), crs=4326) %>%
+  filter(PSTATABB == "CA") %>%
+  filter(YEAR == 2010:2012)
+
+mapview(Gov_eGRID_CA_2012.sf, zcol="PLFUELCT")
+
+Gov_eGRID_CA_2020.sf <- GOV_eGRID_10_20 %>% 
+  st_as_sf(coords = c('LON','LAT'), crs=4326) %>%
+  filter(PSTATABB == "CA") %>%
+  filter(YEAR == 2012:2020)
+
+mapview(Gov_eGRID_CA_2020.sf, zcol="PLFUELCT")
+
+#Combine spatial layers for TX
+#Filter CA State Boundary by party
+GOV_States.sf <- st_as_sf(GOV_States) %>%
+  filter(StateAbbreviation == "CA")
+
+#Layering CA Boundaries and plants for 2012
+
+party_map <- mapview(GOV_States.sf, col.regions = "blue") +
+  mapview(Gov_eGRID_CA_2012.sf, zcol="PLFUELCT")
+print(party_map)
+
+#Layering CA Boundaries and plants for 2016
+party_map <- mapview(GOV_States.sf, col.regions = "blue") +
+  mapview(Gov_eGRID_CA_2020.sf, zcol="PLFUELCT")
+print(party_map)
 ```
 
-```{r}
-#Playing around with data cuts
-
-GOV_States.sf.NC <- GOV_States.sf %>%
-  filter(StateAbbreviation == "NC")
-
-
-#mapview(GOV_States.sf.NC, zcol = "party", col.regions = party_colors_NC)
-
-#mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$year == "2013", zcol = "party", col.regions = party_colors_NC)
-
-#mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$year == "2010", zcol = "party", col.regions = party_colors_NC)
-
-#Note that "GOV_States.sf.NC$End_Year" is a character
-#mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$End_Year == "2013", zcol = "party", col.regions = party_colors_NC) +
- #mapview(Gov_eGRID.sf, subset = Gov_eGRID.sf$PSTATABB == "NC", subset = #Gov_eGRID.sf$PLFUELCT == "SOLAR")
-
-
-
-
-#party_colors_NC <- c("Democrat" = "blue",
- #                    "Republican" = "red")
-
-#GOV_States.sf.NC$party <- as.factor(GOV_States.sf.NC$party)
-#GOV_States.sf.NC$End_Year <- as.numeric(GOV_States.sf.NC$End_Year)
-
-
-#party_colors_NC <- mapviewColors(x=GOV_States.sf.NC, 
-                                 #zcol="party",
-                                 #colors = c("red", "blue"),
-                                #at = unique(GOV_States.sf.NC$party))
-
-
-#mapview(filter(GOV_States.sf.NC,End_Year == "2013"), zcol = "party", col.regions = party_colors_NC)
-
-#mapview(GOV_States.sf.NC, subset = GOV_States.sf.NC$End_Year == "2016", zcol = "party", col.regions = party_colors_NC)
-
-```
+\newpage
 
 ## Question 1: <insert specific question here and add additional subsections for additional questions below, if needed>
 
