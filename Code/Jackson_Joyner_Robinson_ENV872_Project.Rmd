@@ -9,6 +9,7 @@ output:
     df_print: paged
 always_allow_html: true
 ---
+Link to GitHub repository: https://github.com/JRabbit23/EDE_Jackson_Joyner_Robinson
 
 \newpage
 \tableofcontents 
